@@ -6,17 +6,18 @@ import {
   LayoutDashboard,
   FolderKanban,
   Users,
-  Bell,
-  BarChart3,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  LucideLayoutDashboard,
+  ClipboardList,
+  AlertCircle,
 } from 'lucide-react'
 import { useAuth } from '@/app/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
-import { User } from '@/types'
+import type { User } from '@/types'
 
 
 interface SidebarProps {
@@ -27,19 +28,30 @@ interface SidebarProps {
 
 
 export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
-  const navigation = [
-    { name: 'Overview', href: '/admin', icon: LayoutDashboard },
-    { name: 'Dossiers', href: '/admin/dossiers', icon: FolderKanban },
-    { name: 'Users', href: '/admin/utilisateurs', icon: Users },
-    { name: 'Alerts', href: '/admin/alerts', icon: Bell },
-    { name: 'Statistics', href: '/admin/statistics', icon: BarChart3 },
-  ]
+    const {logout} = useAuth()
+
+  const navigation = {
+    admin:[
+      { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+      { name: 'Dossiers', href: '/admin/dossiers', icon: FolderKanban },
+      { name: 'Utilisateurs', href: '/admin/utilisateurs', icon: Users },
+      { name: 'Alertes', href: '/admin/alerts', icon: AlertCircle }
+    ],
+    directeur: [
+      {name: 'DashBoard', href: '/directeur', icon: LucideLayoutDashboard},
+      {name: 'Dossiers', href: '/directeur/dossiers', icon: FolderKanban },
+      {name: 'Staff', href: '/directeur/staff', icon: Users }
+    ],
+    intervenant:[
+      { name: 'Dashboard', href: '/intervant', icon: LayoutDashboard },
+      { name: 'Taches', href: '/intervenant/taches', icon: ClipboardList },
+      { name: 'Alertes', href: '/intervenant/alertes', icon: AlertCircle}
+    ]
+  }
   const pathname = usePathname()
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    window.location.href = '/login'
+    logout()
   }
-
   return (
     <aside 
       className={cn(
@@ -62,8 +74,8 @@ export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+        {navigation[user.role_dir].map((item) => {
+          const isActive = pathname === item.href
           return (
             <Link
               key={item.name}

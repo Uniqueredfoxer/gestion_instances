@@ -2,14 +2,14 @@
 export type UserRole = 'admin' | 'directeur' | 'manager' | 'intervenant';
 
 export interface User {
-  id: number;
-  nom?: string;
-  prenom?: string;
-  email: string;
-  poste?: string;
-  role_dir: UserRole;
-  statut?: 'actif' | 'inactif';
-  date_creation?: string;
+  id: string
+  nom: string
+  prenom: string
+  email: string
+  role_dir: 'admin' | 'directeur' | 'intervenant'
+  statut?: 'actif' | 'inactif'
+  poste: string
+  date_creation?: string
 }
 
 export interface Dossier {

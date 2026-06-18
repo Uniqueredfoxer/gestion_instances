@@ -41,8 +41,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {method:'POST', headers:{'Content-Type': 'application/json'}, credentials:'include', body: JSON.stringify({email:email, mdp:password})});
-      const { userWithouthPassword: user } = await response.json();
+      const response = await fetch('http://localhost:5000/api/auth/login', {method:'POST', headers:{'Content-Type': 'application/json'}, body: JSON.stringify({email:email, mdp:password})});
+      const data = await response.json();
+      const { token, userWithouthPassword: user } = data.data
+      localStorage.setItem('token', token)
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       router.push(routes[user.role_dir]);

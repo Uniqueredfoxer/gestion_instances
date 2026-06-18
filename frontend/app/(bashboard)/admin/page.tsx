@@ -4,33 +4,50 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/app/hooks/useAuth'
 import { StatCard } from '@/components/ui/statCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { getStats } from '@/lib/api'
+import { getStats, getAllUsers } from '@/lib/api'
+import UserFormModal from '@/components/UserFormModal'
+import DossierFormModal from '@/components/DossierFormModal'
 import { 
   FolderKanban, 
   Users, 
-  CheckSquare, 
-  Clock,
   TrendingUp,
   AlertCircle,
   CheckCheck,
   ClockAlert,
 } from 'lucide-react'
+import { User } from '@/types'
 
+interface stats {
+  totaldossiers: number
+  totalusers: number,
+  taux_completion: number,
+  dossier_termines: number,
+  dossier_en_retard: number
+}
 
 export default function OverviewPage() {
   const { user } = useAuth()
-  const [stats, setStats] = useState<any>(null)
+  const [users, setUsers] = useState<User[]>()
+  const [stats, setStats] = useState<stats|null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false)
+  const [isDossierModalOpen, setIsDosierModalOpen] = useState(false)
+  
+  const getUsers = async ()=>{ 
+    const response = await getAllUsers()
+    const users = response.data
+    console.log(users)
+    return users
+  }
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchStatsAndUsers = async () => {
       try {
         setLoading(true)
-        const response = await getStats()
-        console.log(response.data)
-        const data = response.data
-        setStats(data)
+        const stats = await getStats()
+        const usersData = await getUsers() 
+        setStats(stats.data)
+        setUsers(usersData)
       } catch (err) {
         setError('Failed to load dashboard statistics')
         console.error(err)
@@ -38,14 +55,14 @@ export default function OverviewPage() {
         setLoading(false)
       }
     }
-    fetchStats()
+    fetchStatsAndUsers()
   }, [])
 
-
+  const openUserModal = ()=> setIsUserModalOpen(true);
+  const openDossierModal = ()=> setIsDosierModalOpen(true)
   const getGreeting = () => {
     const hour = new Date().getHours()
-    if (hour < 12) return 'Bonjour'
-    if (hour < 18) return 'Bonjour'
+    if (hour < 15) return 'Bonjour'
     return 'Bonsoir'
   }
 
@@ -73,27 +90,28 @@ export default function OverviewPage() {
       color: 'primary'
     },
     {
-      title: 'Total Users',
+      title: 'Total Utilisateur',
       value: stats?.totalusers || 0,
       icon: Users,
-      color: 'blue'
+      color: 'secondary'
     },
     {
       title: 'Taux de MEO global',
       value: `${stats?.taux_completion || 0}%`,
       icon: TrendingUp,
-      color: 'green'
+      color: 'success'
     },
     {
       title: 'Dossier terminés',
       value: stats?.dossier_termines || 0,
       icon: CheckCheck,
-      color: 'orange'
+      color: 'warning'
     },
     {
       title: 'Dossier en Retard',
-      value: stats?.dossier_en_retard,
-      icon: ClockAlert
+      value: stats?.dossier_en_retard || 0,
+      icon: ClockAlert,
+      color: 'error'
     }
   ]
 
@@ -104,32 +122,33 @@ export default function OverviewPage() {
           {getGreeting()} {user?.prenom},
         </h1>
         <p className="text-gray-600 mt-1">
-          Bienvenue sur votre espace DirectTrack.
-        </p>lastName
+          Bienvenue dans votre espace.
+        </p>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-gray-900">
         {kpis.map((kpi, index) => (
           <StatCard
             key={index}
             title={kpi.title}
             value={kpi.value}
             icon={kpi.icon}
+            color={kpi.color}
           />
         ))}
       </div>
 
-      {/* Recent Activity / Additional Content */}
+      {/*  Activites Recentes*/}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 text-gray-200 bg-card">
           <CardHeader>
-            <CardTitle>Activites Recentes</CardTitle>
+            <CardTitle className='text-gray-900'>Activites Recentes</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <p className="text-gray-500 text-sm">
-                No recent activity to display.
+              <p className="text-sm">
+                Aucune activite recente a afficher.
               </p>
             </div>
           </CardContent>
@@ -137,24 +156,36 @@ export default function OverviewPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-gray-900">
               <AlertCircle className="w-5 h-5" />
               Actions Rapides
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <button className="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-sm">
-              Create New Dossier
+          <CardContent className="space-y-3 text-gray-700">
+            <button className="w-full text-left px-4 py-2 border border-gray-300 hover:bg-gray-100 rounded-lg transition-colors text-sm" onClick={openDossierModal}>
+              Ajouter un Dossier
             </button>
-            <button className="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-sm">
-              Add New User
+            <button className="w-full text-left px-4 py-2 border border-gray-300 hover:bg-gray-100 rounded-lg transition-colors text-sm" onClick={openUserModal}>
+              Ajouter un Utilisateur
             </button>
-            <button className="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-sm">
-              View Reports
+            <button className="w-full text-left px-4 py-2 border border-gray-300 hover:bg-gray-100 rounded-lg transition-colors text-sm">
+              Voir les rapports
             </button>
           </CardContent>
         </Card>
       </div>
+      <UserFormModal
+        isOpen={isUserModalOpen}
+        onClose={()=> setIsUserModalOpen(false)}
+        onSuccess={()=>{}}
+      />
+      <DossierFormModal
+        isOpen={isDossierModalOpen}
+        onClose={()=> setIsDosierModalOpen(false)}
+        onSuccess={()=> {}}
+        user={user}
+        users={users}
+      />
     </div>
   )
 }

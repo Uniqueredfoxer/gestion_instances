@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
-import { register } from '@/lib/api'
+import type { User } from '@/types'
+import UserFormModal from '@/components/UserFormModal'
 import { 
   Plus, 
   Edit, 
@@ -11,33 +12,18 @@ import {
   UserCheck,
   UserX,
   Search,
-  MoreVertical
 } from 'lucide-react'
 import { getAllUsers, deleteUser } from '@/lib/api'
 
-interface User {
-  id?: string
-  prenom: string
-  nom: string
-  email: string
-  role_dir: string
-  statut?: 'actif' | 'inactif'
-  poste?: string
-  createdAt: string
-}
+
+
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
-  const [userData, setUserData] = useState({
-    nom: '',
-    prenom: '',
-    email: '',
-    role_dir: '',
-    poste: ''
-  })
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
       const fetchUsers = async () => {
@@ -76,8 +62,13 @@ export default function UsersPage() {
       user.email.toLowerCase().includes(searchLower)
     )
   })
-  const createUser = async()=>{
-    
+
+  const handleUserSuccess = (user: User) => {
+    setUsers([...users, user])
+  }
+
+  const openModal = () => {
+    setIsModalOpen(true)
   }
 
   if (loading) {
@@ -94,12 +85,12 @@ export default function UsersPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Users</h1>
           <p className="text-gray-600 text-sm mt-1">
-            Manage all users in the system
+            Gerer tous les utilisateurs du systeme
           </p>
         </div>
-        <Button className="flex items-center gap-2" onClick={createUser}>
+        <Button className="flex  items-center gap-2" onClick={openModal}>
           <Plus className="w-4 h-4" />
-          Create New User
+          Creer un utilisateur
         </Button>
       </div>
 
@@ -116,7 +107,7 @@ export default function UsersPage() {
             />
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-500">
-            <span>{filteredUsers.length} users</span>
+            <span>{`${filteredUsers.length} ${filteredUsers.length > 1 ? 'utilisateurs' : 'utilisateur'}`}</span>
           </div>
         </div>
 
@@ -188,7 +179,7 @@ export default function UsersPage() {
                           <button 
                             className="p-1 hover:bg-red-50 rounded transition-colors text-gray-500 hover:text-red-600"
                             title="Delete"
-                            onClick={() => handleDelete(user.id)}
+                            onClick={() => handleDelete(user.id!)}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -202,6 +193,13 @@ export default function UsersPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* User Form Modal */}
+      <UserFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handleUserSuccess}
+      />
     </div>
   )
 }

@@ -48,12 +48,11 @@ const AuthService = {
                 
             const hash = await bcrypt.hash(mdp, 10);
             const result = await db.query(
-                    `INSERT INTO users(nom, prenom, email, mdp, poste) VALUES($1, $2, $3, $4, $5) RETURNING id, nom, prenom, email, role_dir`,
+                    `INSERT INTO users(nom, prenom, email, mdp, poste) VALUES($1, $2, $3, $4, $5) RETURNING id, nom, prenom, email, poste, role_dir, statut`,
                     [nom.trim(), prenom.trim(), email.toLowerCase(), hash, poste]
                 );
             const newUser = result.rows[0];
-            const token = jwt.sign({id: newUser.id, email: newUser.email, role: newUser.role_dir}, JWT_SECRET, {expiresIn: JWT_EXPIRE_IN});
-            return { success: true, data:{token: token, user: newUser} };
+            return { success: true, data:newUser };
         } catch (err) {
             console.error("Error creating user: ", err);
             return { success: false, error: "Database error" };
