@@ -4,7 +4,8 @@ export const UserController = {
 
     async getAllUsers(req, res) {
         try {
-            if (req.user.role !== 'admin') {
+            console.log(req.user.role)
+            if (req.user.role !== 'admin' && req.user.role !== 'directeur') {
                 return res.status(403).json({ error: "Accès administrateur requis" });
             }
             
@@ -20,7 +21,7 @@ export const UserController = {
     async getUserById(req, res) {
         try {
             // Admin peut voir n'importe qui, les autres seulement eux-mêmes
-            if (req.user.role !== 'admin' && parseInt(req.params.id) !== req.user.id) {
+            if (req.user.role !== 'admin' && req.user.role !== 'directeur' && parseInt(req.params.id) !== req.user.id) {
                 return res.status(403).json({ success: false, error: "Accès non autorisé" });
             }
             

@@ -12,27 +12,22 @@ export const TacheService = {
             throw new Error("Dossier non trouvé");
         }
         
-        if (dossierCheck.rows[0].cree_par !== userId && userRole !== 'admin') {
+        if (dossierCheck.rows[0].cree_par !== userId && !['admin', 'directeur'].includes(userRole)) {
             throw new Error("Seul le créateur du dossier peut ajouter des tâches");
         }
         
         
+        const id_intervenant = intervenants.length > 0 ? intervenants[0].utilisateur_id : null;
+        if (!id_intervenant) throw new Error("Un intervenant est requis");
+
         const taskResult = await db.query(
-            `INSERT INTO taches (libelle, date_debut, date_fin_prevue, id_dossier, cree_par)
-             VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO taches (libelle, date_debut, date_fin_prevue, id_dossier, cree_par, id_intervenant)
+             VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING *`,
-            [libelle, date_debut, date_fin_prevue, dossierId, userId]
+            [libelle, date_debut, date_fin_prevue, dossierId, userId, id_intervenant]
         );
         
         const task = taskResult.rows[0];
-        
-        for (const interv of intervenants) {
-            await db.query(
-                `INSERT INTO tache_intervenants (id_tache, id_intervenant, intervention, assignee_par)
-                 VALUES ($1, $2, $3, $4)`,
-                [task.id, interv.utilisateur_id, interv.role, userId]
-            );
-        }
         
         return task;
     },
@@ -40,11 +35,11 @@ export const TacheService = {
     async getTasksByDossier(dossierId, userId, userRole) {
         const query = `
             SELECT t.*,
-                   array_agg(DISTINCT jsonb_build_object(
+                   jsonb_build_array(jsonb_build_object(
                        'id', u.id,
                        'nom', u.nom,
                        'prenom', u.prenom,
-                       'role', ti.intervention
+                       'role', 'Intervenant'
                    )) as intervenants,
                    CASE 
                        WHEN t.demande_validation_le IS NOT NULL AND t.valide_le IS NULL 
@@ -53,10 +48,8 @@ export const TacheService = {
                        ELSE 'active'
                    END as statut_validation
             FROM taches t
-            LEFT JOIN tache_intervenants ti ON t.id = ti.id_tache
-            LEFT JOIN users u ON ti.id_intervenant = u.id
+            LEFT JOIN users u ON t.id_intervenant = u.id
             WHERE t.id_dossier = $1
-            GROUP BY t.id
             ORDER BY t.date_creation DESC
         `;
         
@@ -67,8 +60,8 @@ export const TacheService = {
 
     async updateProgress(taskId, avancement, userId) {
         const assignmentCheck = await db.query(
-            `SELECT * FROM tache_intervenants 
-             WHERE id_tache = $1 AND id_intervenant = $2`,
+            `SELECT * FROM taches 
+             WHERE id = $1 AND id_intervenant = $2`,
             [taskId, userId]
         );
         
@@ -96,8 +89,8 @@ export const TacheService = {
   
     async requestCompletion(taskId, userId) {
         const assignmentCheck = await db.query(
-            `SELECT * FROM tache_intervenants 
-             WHERE id_tache = $1 AND id_intervenant = $2`,
+            `SELECT * FROM taches 
+             WHERE id = $1 AND id_intervenant = $2`,
             [taskId, userId]
         );
         
@@ -133,9 +126,7 @@ export const TacheService = {
         return result.rows[0];
     },
     
-    // Valider ou rejeter une tâche (créateur du dossier ou admin)
     async validateCompletion(taskId, userId, userRole, approuve, commentaires) {
-        // Vérifier que l'utilisateur peut valider (créateur du dossier ou admin)
         const taskCheck = await db.query(
             `SELECT t.*, d.cree_par 
              FROM taches t
@@ -150,7 +141,7 @@ export const TacheService = {
         
         const task = taskCheck.rows[0];
         
-        if (task.cree_par !== userId && userRole !== 'admin') {
+        if (task.cree_par !== userId && !['admin', 'directeur'].includes(userRole)) {
             throw new Error("Seul le créateur du dossier peut valider les tâches");
         }
         
@@ -187,13 +178,11 @@ export const TacheService = {
         }
     },
     
-    // Mettre à jour une tâche (créateur du dossier uniquement)
     async updateTask(taskId, updates, userId, userRole) {
-        // Vérifier les permissions
         const taskCheck = await db.query(
             `SELECT t.*, d.cree_par 
-             FROM tache t
-             JOIN dossier d ON t.id_dossier = d.id
+             FROM taches t
+             JOIN dossiers d ON t.id_dossier = d.id
              WHERE t.id = $1`,
             [taskId]
         );
@@ -204,11 +193,40 @@ export const TacheService = {
         
         const task = taskCheck.rows[0];
         
-        if (task.cree_par !== userId && userRole !== 'admin') {
+        const isAssignedIntervenant = task.id_intervenant === userId;
+        const isPrivileged = ['admin', 'directeur'].includes(userRole) || task.cree_par === userId;
+
+        // Intervenants can only update the statut of their own tasks
+        if (!isPrivileged && isAssignedIntervenant) {
+            const allowedForIntervenant = ['statut'];
+            const setClauses = [];
+            const params = [];
+            let paramCounter = 1;
+
+            for (const [key, value] of Object.entries(updates)) {
+                if (allowedForIntervenant.includes(key) && value !== undefined) {
+                    setClauses.push(`${key} = $${paramCounter++}`);
+                    params.push(value);
+                }
+            }
+
+            if (setClauses.length === 0) {
+                throw new Error("Aucun champ valide à mettre à jour");
+            }
+
+            params.push(taskId);
+            const result = await db.query(
+                `UPDATE taches SET ${setClauses.join(', ')} WHERE id = $${paramCounter} RETURNING *`,
+                params
+            );
+            return result.rows[0];
+        }
+
+        if (!isPrivileged) {
             throw new Error("Seul le créateur du dossier peut modifier cette tâche");
         }
         
-        const allowedUpdates = ['libelle', 'date_debut', 'date_fin_prevue'];
+        const allowedUpdates = ['libelle', 'description', 'date_debut', 'date_fin_prevue', 'statut', 'id_intervenant'];
         const setClauses = [];
         const params = [];
         let paramCounter = 1;
@@ -235,24 +253,68 @@ export const TacheService = {
         return result.rows[0];
     },
     
-
     async getMyTasks(userId) {
         const result = await db.query(
             `SELECT t.*, d.titre as titre_dossier, d.id as id_dossier,
-                    ti.role_intervention,
                     CASE 
                         WHEN t.demande_validation_le IS NOT NULL AND t.valide_le IS NULL 
                         THEN 'en_attente_validation'
                         ELSE 'active'
                     END as statut_validation
              FROM taches t
-             JOIN tache_intervenants ti ON t.id = ti.id_tache
              JOIN dossiers d ON t.id_dossier = d.id
-             WHERE ti.id_intervenant = $1
+             WHERE t.id_intervenant = $1
              ORDER BY t.date_fin_prevue ASC NULLS LAST`,
             [userId]
         );
         
         return result.rows;
-    }
+    },
+
+    async getMyStats(userId) {
+    const query = `
+        SELECT 
+            COUNT(*) as total_taches,
+            COUNT(CASE WHEN statut = 'termine' THEN 1 END) as taches_terminees,
+            COUNT(CASE WHEN statut = 'en_cours' THEN 1 END) as taches_en_cours,
+            COUNT(CASE WHEN statut = 'a_faire' THEN 1 END) as taches_a_faire,
+            COUNT(CASE 
+                WHEN statut != 'termine' 
+                AND date_fin_prevue < CURRENT_DATE 
+                THEN 1 
+            END) as taches_en_retard,
+            COUNT(CASE 
+                WHEN statut != 'termine' 
+                AND date_fin_prevue BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '3 days' 
+                THEN 1 
+            END) as taches_urgentes,
+            COALESCE(ROUND(AVG(CASE WHEN statut = 'termine' THEN 100 ELSE avancement END), 2), 0) as avancement_moyen,
+            COALESCE(ROUND(
+                COUNT(CASE WHEN statut = 'termine' THEN 1 END)::numeric / 
+                NULLIF(COUNT(*), 0) * 100, 2
+            ), 0) as taux_achevement,
+            COALESCE(ROUND(
+                COUNT(CASE WHEN statut = 'termine' AND date_fin_prevue >= CURRENT_DATE THEN 1 END)::numeric / 
+                NULLIF(COUNT(CASE WHEN statut = 'termine' THEN 1 END), 0) * 100, 2
+            ), 0) as taux_ponctualite
+        FROM taches
+        WHERE id_intervenant = $1
+    `;
+
+    const result = await db.query(query, [userId]);
+    const stats = result.rows[0];
+
+    return {
+        totalTasks: parseInt(stats.total_taches) || 0,
+        completedTasks: parseInt(stats.taches_terminees) || 0,
+        inProgressTasks: parseInt(stats.taches_en_cours) || 0,
+        pendingTasks: parseInt(stats.taches_en_attente) || 0,
+        todoTasks: parseInt(stats.taches_a_faire) || 0,
+        overdueTasks: parseInt(stats.taches_en_retard) || 0,
+        urgentTasks: parseInt(stats.taches_urgentes) || 0,
+        completionRate: parseFloat(stats.taux_achevement) || 0,
+        onTimeRate: parseFloat(stats.taux_ponctualite) || 0,
+        averageProgress: parseFloat(stats.avancement_moyen) || 0,
+    };
+}
 };

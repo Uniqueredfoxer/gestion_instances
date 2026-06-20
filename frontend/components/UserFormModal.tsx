@@ -1,8 +1,7 @@
 'use client';
-import { useState, useEffect, SubmitEventHandler, ChangeEventHandler } from 'react'
+import { useState, useEffect, SubmitEventHandler } from 'react'
 import { Button } from '@/components/ui/Button'
-import { Card, CardContent } from '@/components/ui/Card'
-import { register } from '@/lib/api'
+import { register, updateUser } from '@/lib/api'
 import type { User } from '@/types'
 import { 
   
@@ -23,34 +22,51 @@ export default function UserFormModal({
   userToEdit = null 
 }: { 
   isOpen: boolean
-  onClose: () => void
+  onClose?: () => void
   onSuccess: (user: User) => void //add the new user immediately to the list
   userToEdit?: User | null
 }) {
   const [formData, setFormData] = useState({
-    nom: userToEdit?.nom || '',
-    prenom: userToEdit?.prenom || '',
-    email: userToEdit?.email || '',
-    poste: userToEdit?.poste || '',
+    nom:'',
+    prenom:'',
+    email:'',
+    poste:'',
+    role_dir: 'intervenant',
     mdp: '',
   });
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState< Record<string, string > >({})
   const [successMessage, setSuccessMessage] = useState('')
   const [passwordError, setPasswordError] = useState('')
-
   const resetForm = () => {
     setFormData({
       nom: '',
       prenom: '',
       email: '',
       poste: '',
+      role_dir: 'intervenant',
       mdp: ''
     })
     setErrors({})
     setSuccessMessage('')
   }
-  
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (userToEdit) {
+        setFormData({
+        nom: userToEdit.nom || '',
+        prenom: userToEdit.prenom || '',
+        email: userToEdit.email || '',
+        poste: userToEdit.poste || '',
+        role_dir: userToEdit.role_dir || 'intervenant',
+        mdp: '',
+        });
+    } else {
+        resetForm();
+    }
+}, [isOpen, userToEdit]);
+
 
 
   const validateForm = (): boolean => {
@@ -73,10 +89,12 @@ export default function UserFormModal({
       newErrors.email = 'Veuillez entrer une adresse email valide'
     }
 
-    if(!formData.mdp.trim()){
-        newErrors.mdp = "le mot de passe est requis"
-    }else if(!/[A-Z]/.test(formData.mdp) || !/[a-z]/.test(formData.mdp) || !/[0-9]/.test(formData.mdp)){
-        newErrors.mdp = 'le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre'
+    if (!userToEdit || formData.mdp.trim()) {
+        if(!formData.mdp.trim()){
+            newErrors.mdp = "Le mot de passe est requis"
+        }else if(!/[A-Z]/.test(formData.mdp) || !/[a-z]/.test(formData.mdp) || !/[0-9]/.test(formData.mdp)){
+            newErrors.mdp = 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre'
+        }
     }
 
 
@@ -96,18 +114,24 @@ export default function UserFormModal({
     setErrors({})
 
     try {
-      const response = await register(formData)
-
-      if (!response.success) {
-        throw new Error(response.error || 'Erreur lors de la création')
+      const payload: any = { ...formData }
+      if (userToEdit && !payload.mdp.trim()) {
+        delete payload.mdp
       }
 
-      setSuccessMessage('Utilisateur créé avec succès !')
+      const response = userToEdit 
+        ? await updateUser(userToEdit.id!, payload) 
+        : await register(payload)
+
+      if (!response.success) {
+        throw new Error(response.error || 'Erreur lors de l\'opération')
+      }
+
+      setSuccessMessage(userToEdit ? 'Utilisateur modifié avec succès !' : 'Utilisateur créé avec succès !')
       onSuccess(response.data)
       
       setTimeout(() => {
         resetForm()
-        onClose()
       }, 1500)
 
     } catch (err: unknown) {
@@ -248,48 +272,70 @@ export default function UserFormModal({
             )}
           </div>
 
-          <div>
-            <label htmlFor="mdp" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Mot De Passe <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                id="mdp"
-                name="mdp"
-                type="password"
-                value={formData.mdp}
-                onChange={handlePasswordInputChange}
-                placeholder="********"
-                className={`w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none ${
-                  passwordError ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'
-                }`}
-                disabled={loading}
-              />
+            <div>
+              <label htmlFor="mdp" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Mot De Passe {userToEdit ? <span className="text-gray-400 text-xs">(Optionnel pour modifier)</span> : <span className="text-red-500">*</span>}
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  id="mdp"
+                  name="mdp"
+                  type="password"
+                  value={formData.mdp}
+                  onChange={handlePasswordInputChange}
+                  placeholder="********"
+                  className={`w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none ${
+                    passwordError ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'
+                  }`}
+                  disabled={loading}
+                />
+              </div>
+              {passwordError && (
+                <p className="mt-1 text-sm text-red-500">{passwordError}</p>
+              )}
             </div>
-            {passwordError && (
-              <p className="mt-1 text-sm text-red-500">{passwordError}</p>
-            )}
-          </div>
 
-          <div>
-            <label htmlFor="poste" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Poste
-            </label>
-            <div className="relative">
-              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                id="poste"
-                name="poste"
-                type="text"
-                value={formData.poste || ''}
-                onChange={handleChange}
-                placeholder="Secretaire"
-                className="w-full pl-9 pr-4 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
-                disabled={loading}
-              />
+            <div>
+              <label htmlFor="poste" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Poste
+              </label>
+              <div className="relative">
+                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  id="poste"
+                  name="poste"
+                  type="text"
+                  value={formData.poste || ''}
+                  onChange={handleChange}
+                  placeholder="Secretaire"
+                  className="w-full pl-9 pr-4 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
+                  disabled={loading}
+                />
+              </div>
             </div>
-          </div>
+
+            <div>
+              <label htmlFor="role_dir" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Rôle Système <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <select
+                  id="role_dir"
+                  name="role_dir"
+                  value={formData.role_dir}
+                  onChange={handleChange}
+                  className="w-full pl-9 pr-4 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none appearance-none"
+                  disabled={loading}
+                >
+                  <option value="intervenant">Intervenant</option>
+                  <option value="manager">Manager</option>
+                  <option value="directeur">Directeur</option>
+                  <option value="admin">Administrateur</option>
+                </select>
+              </div>
+            </div>
 
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <Button
@@ -309,10 +355,10 @@ export default function UserFormModal({
               {loading ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Création...
+                  {userToEdit? 'Modification...' : 'Création...'}
                 </>
               ) : (
-                'Créer'
+                userToEdit? 'Modifier' : 'Créer'
               )}
             </Button>
           </div>

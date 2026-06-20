@@ -1,8 +1,8 @@
 
 
 CREATE TYPE role_sys           AS ENUM ('admin', 'directeur', 'manager', 'intervenant');
-CREATE TYPE statut_dossier     AS ENUM ('en_cours', 'boucle');
-CREATE TYPE statut_tache       AS ENUM ('a_faire', 'en_cours', 'termine');
+CREATE TYPE statut_dossier     AS ENUM ('en_cours', 'boucle', 'en_retard', 'annule');
+CREATE TYPE statut_tache       AS ENUM ('a_faire', 'en_cours', 'termine', 'urgente');
 CREATE TYPE role_intervention  AS ENUM ('rapporteur', 'contributeur', 'validateur', 'suivi_evaluateur');
 CREATE TYPE user_status        AS ENUM ('actif', 'inactif', 'suspendu');
 CREATE TYPE statu_validation   AS ENUM ('en_attente', 'approuvee', 'rejetee');
@@ -33,11 +33,11 @@ CREATE TABLE IF NOT EXISTS dossiers(
     titre            VARCHAR(150) NOT NULL,
     description      TEXT,
     cree_par INT REFERENCES users(id);
-    date_creation    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     date_limite      DATE         NOT NULL,
     date_fin_reelle  DATE,
     statut           statut_dossier DEFAULT 'en_cours',
-    id_instance      INT REFERENCES instance(id),
+    id_responsable      INT REFERENCES users(id),
+    date_creation    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_dossier_date_limite CHECK (date_limite > date_creation::DATE),
     CONSTRAINT chk_dossier_date_fin_reelle CHECK (date_fin_reelle IS NULL OR date_fin_reelle >= date_creation::DATE)
 );
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS taches(
     avancement              INT          DEFAULT 0 CHECK (avancement >= 0 AND avancement <= 100),
     statut                  statut_tache DEFAULT 'a_faire',
     id_dossier              INT NOT NULL REFERENCES dossiers(id),
-    id_intervenant          INT NOT NULL REFERENCES users(id),--sera enlevee car une relation one-many
+    id_responsable          INT NOT NULL REFERENCES users(id),
     cree_par                INT REFERENCES users(id),
     necessite_validation    BOOLEAN DEFAULT TRUE,
     valide_par              INT REFERENCES users(id),
@@ -90,7 +90,7 @@ SELECT
         ELSE                                                              'à jour'
     END                                             AS alerte_suivi
 FROM dossiers d
-LEFT JOIN tache t ON d.id = t.id_dossier
+LEFT JOIN taches t ON d.id = t.id_dossier
 GROUP BY d.id, d.titre, d.statut, d.date_limite;
 
 
@@ -103,7 +103,7 @@ FROM taches;
 
 CREATE TABLE IF NOT EXISTS demandes_validation (
     id SERIAL PRIMARY KEY,
-    id_tache INT REFERENCES tache(id) ON DELETE CASCADE,
+    id_tache INT REFERENCES taches(id) ON DELETE CASCADE,
     demandee_par INT REFERENCES users(id),
     demandee_le TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     statut VARCHAR(20) DEFAULT 'en_attente',
@@ -124,7 +124,7 @@ CREATE INDEX IF NOT EXISTS idx_dossier_instance    ON dossiers(id_instance);
 CREATE INDEX IF NOT EXISTS idx_dossier_statut      ON dossiers(statut);
 CREATE INDEX IF NOT EXISTS idx_dossier_date_limite ON dossiers(date_limite);
 CREATE INDEX IF NOT EXISTS idx_tache_dossier       ON taches(id_dossier);
-CREATE INDEX IF NOT EXISTS idx_tache_intervenant   ON taches(id_internant);
+CREATE INDEX IF NOT EXISTS idx_tache_intervenant   ON taches(id_intervenant);
 CREATE INDEX IF NOT EXISTS idx_alerte_dossier      ON alertes(id_dossier);
 CREATE INDEX IF NOT EXISTS idx_alerte_destinataire ON alertes(id_destinataire);
 

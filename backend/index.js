@@ -17,12 +17,20 @@ if (!PORT){
     
 }
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: '*',
     credentials: true
 }))
-app.use(requestLogger)
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
+app.use(requestLogger)
+
+// Handle malformed JSON bodies — without this Express returns HTML
+app.use((err, req, res, next) => {
+    if (err.type === 'entity.parse.failed') {
+        return res.status(400).json({ success: false, error: 'Corps de requête JSON invalide' });
+    }
+    next(err);
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/dossiers', dossierRoutes);

@@ -18,10 +18,10 @@ import {
 import { User } from '@/types'
 
 interface stats {
-  totaldossiers: number
-  totalusers: number,
-  taux_completion: number,
-  dossier_termines: number,
+  total_dossiers: number
+  total_users: number,
+  completion_rate: number,
+  dossiers_termines: number,
   dossier_en_retard: number
 }
 
@@ -102,10 +102,10 @@ export default function OverviewPage() {
       color: 'success'
     },
     {
-      title: 'Dossier terminés',
+      title: 'Dossier traités',
       value: stats?.dossier_termines || 0,
       icon: CheckCheck,
-      color: 'warning'
+      color: 'success'
     },
     {
       title: 'Dossier en Retard',

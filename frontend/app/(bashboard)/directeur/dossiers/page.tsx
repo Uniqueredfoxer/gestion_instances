@@ -40,6 +40,7 @@ export default function DossiersPage() {
     try {
       setLoading(true)
       const data = await getAllDossiers()
+      console.log(data)
       setDossiers(data.data)
     } catch (err) {
       toast.error('Impossible de charger les dossiers')

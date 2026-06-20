@@ -38,7 +38,7 @@ export const DossierController = {
         }
     },
     
-    // Récupérer un dossier par ID
+
     async getDossierById(req, res) {
         try {
             const dossier = await DossierService.getDossierById(
@@ -57,7 +57,7 @@ export const DossierController = {
         }
     },
     
-    // Mettre à jour un dossier
+
     async updateDossier(req, res) {
         try {
             const dossier = await DossierService.updateDossier(
@@ -73,7 +73,7 @@ export const DossierController = {
         }
     },
     
-    // Supprimer un dossier
+
     async deleteDossier(req, res) {
         try {
             await DossierService.deleteDossier(
@@ -88,7 +88,7 @@ export const DossierController = {
         }
     },
     
-    // Statistiques
+    
     async getStatistics(req, res) {
         try {
             if (!['admin', 'directeur'].includes(req.user.role)) {
@@ -102,10 +102,10 @@ export const DossierController = {
         }
     },
     
-    // Gestion des tâches
+
     async createTask(req, res) {
         try {
-            const task = await TaskService.createTask(
+            const task = await TacheService.createTask(
                 req.body,
                 req.params.dossierId,
                 req.user.id,

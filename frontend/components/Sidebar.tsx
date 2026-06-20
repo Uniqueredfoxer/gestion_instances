@@ -12,6 +12,7 @@ import {
   LucideLayoutDashboard,
   ClipboardList,
   AlertCircle,
+  Calendar,
 } from 'lucide-react'
 import { useAuth } from '@/app/hooks/useAuth'
 import { cn } from '@/lib/utils'
@@ -43,8 +44,9 @@ export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
       {name: 'Staff', href: '/directeur/staff', icon: Users }
     ],
     intervenant:[
-      { name: 'Dashboard', href: '/intervant', icon: LayoutDashboard },
-      { name: 'Taches', href: '/intervenant/taches', icon: ClipboardList },
+      { name: 'Dashboard', href: '/intervenant', icon: LayoutDashboard },
+      { name: 'Taches', href: '/intervenant/mes-taches', icon: ClipboardList },
+      { name: 'Calendrier', href: '/intervenant/calendrier', icon: Calendar},
       { name: 'Alertes', href: '/intervenant/alertes', icon: AlertCircle}
     ]
   }
@@ -74,7 +76,7 @@ export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        {navigation[user.role_dir].map((item) => {
+        {navigation[user?.role_dir || 'intervenant'].map((item) => {
           const isActive = pathname === item.href
           return (
             <Link
@@ -112,7 +114,7 @@ export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
                 {user?.prenom} {user?.nom}
               </p>
               <p className="text-xs text-gray-500 truncate capitalize">
-                {user?.role_dir?.toLowerCase().replace('_', ' ')}
+                {user?.poste?.toLowerCase().replace('_', ' ')}
               </p>
             </div>
             <Button

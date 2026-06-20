@@ -5,24 +5,15 @@ import { X, FolderKanban, User2, Calendar, AlertCircle, CheckCircle } from 'luci
 import { Button } from '@/components/ui/Button'
 import type { User } from '@/types'
 import { createDossier, updateDossier } from '@/lib/api'
+import type { Dossier } from '@/types'
 
-interface Dossier {
-  id: number
-  titre: string
-  description?: string
-  cree_par: number
-  statut?: 'brouillon' | 'en_cours' | 'en_attente' | 'termine' | 'annule'
-  id_responsable: number
-  date_echeance: string
-  date_creation?: string
-}
 
 interface DossierFormModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: (dossier: Dossier) => void
   dossierToEdit?: Dossier | null
-  user: User
+  user: User | null | undefined
   users: Array<User>
 }
 
@@ -35,12 +26,10 @@ export default function DossierFormModal({
   users = []
 }: DossierFormModalProps) {
   const [formData, setFormData] = useState<Dossier>({
-    id: dossierToEdit?.id || 0,
-    titre: dossierToEdit?.titre || '',
-    description: dossierToEdit?.description || '',
-    cree_par: parseInt(user.id),
-    date_echeance: dossierToEdit?.date_echeance || '',
-    statut: dossierToEdit?.statut || 'en_cours',
+    titre: '',
+    description: '',
+    date_limite: '',
+    statut: 'en_cours',
     id_responsable: 0 
   })
   const [loading, setLoading] = useState(false)
@@ -50,10 +39,9 @@ export default function DossierFormModal({
     setFormData({
       titre: '',
       description: '',
-      cree_par: parseInt(user.id), 
-      statut: 'en_cours',
       id_responsable: 0,
-      date_echeance: '',
+      statut: 'en_cours',
+      date_limite: '',
     })
     setErrors({})
     setSuccessMessage('')
@@ -64,12 +52,11 @@ export default function DossierFormModal({
     if (dossierToEdit) {
       if (formData.id !== dossierToEdit.id) {
         setFormData({
-          ...dossierToEdit,
           titre: dossierToEdit.titre || '',
           description: dossierToEdit.description || '',
-          statut: dossierToEdit.statut,
           id_responsable: dossierToEdit.id_responsable || 0,
-          date_echeance: dossierToEdit.date_echeance ? dossierToEdit.date_echeance.split('T')[0] : ''
+          statut: dossierToEdit.statut,
+          date_limite: dossierToEdit.date_limite ? dossierToEdit.date_limite.split('T')[0] : ''
         })
       }
     } else {
@@ -79,7 +66,6 @@ export default function DossierFormModal({
     }
   }, [dossierToEdit, isOpen])
 
-  if(users.length===0) console.log('the users array is empty')
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
@@ -93,15 +79,15 @@ export default function DossierFormModal({
       newErrors.id_responsable = 'Veuillez sélectionner un responsable'
     }
 
-    if (!formData.date_echeance) {
-      newErrors.date_echeance = "La date d'échéance est requise"
+    if (!formData.date_limite) {
+      newErrors.date_limite = "La date d'échéance est requise"
     } else {
-      const targetDate = new Date(formData.date_echeance)
+      const targetDate = new Date(formData.date_limite)
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       
       if (targetDate < today) {
-        newErrors.date_echeance = "La date d'échéance doit être aujourd'hui ou ultérieure"
+        newErrors.date_limite = "La date d'échéance doit être aujourd'hui ou ultérieure"
       }
     }
 
@@ -121,12 +107,13 @@ export default function DossierFormModal({
     setErrors({})
 
     try {
-      const response = dossierToEdit ? updateDossier(dossierToEdit.id, formData) : createDossier(formData)
-
+      console.log('Submitting formData: ', formData)
+      const response = dossierToEdit ? await updateDossier(dossierToEdit.id, formData) : await createDossier(formData)
+      console.log(response.data)
       const data = response.data
 
       if (!response.success) {
-        throw new Error(response.error || 'une erreur est survenue')
+        throw new Error('erreur lors de la modification: ',response.error || 'une erreur est survenue')
       }
 
       setSuccessMessage(dossierToEdit ? 'Dossier modifié avec succès !' : 'Dossier créé avec succès !')
@@ -153,7 +140,6 @@ export default function DossierFormModal({
     } else {
       setFormData(prev => ({ ...prev, [name]: value }))
     }
-    
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
@@ -245,14 +231,14 @@ export default function DossierFormModal({
                 <select
                   id="id_responsable"
                   name="id_responsable"
-                  value={formData.id_responsable ===0? '': formData.id_responsable}
+                  value={formData.id_responsable}
                   onChange={handleChange}
-                  className={`w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none appearance-none ${
+                  className={`w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none ${
                     errors.id_responsable ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'
                   }`}
                   disabled={loading}
                 >
-                  <option value={user.id}>Moi-meme</option>
+                  <option value={user?.id}>Moi-meme</option>
                   {users.map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.nom} {u.prenom}
@@ -270,20 +256,20 @@ export default function DossierFormModal({
                 Date d&apos;échéance <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
-                  id="date_echeance"
-                  name="date_echeance"
+                  id="date_limite"
+                  name="date_limite"
                   type="date"
-                  value={formData.date_echeance || ''}
+                  value={formData.date_limite || ''}
                   onChange={handleChange}
                   className={`w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none ${
-                    errors.date_echeance ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'
+                    errors.date_limite ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'
                   }`}
                   disabled={loading}
                 />
+                <Calendar className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-black"/>
               </div>
-              {errors.date_echeance && (
+              {errors.date_limite && (
                 <p className="mt-1 text-sm text-red-500">{errors.date_echeance}</p>
               )}
             </div>
@@ -295,7 +281,6 @@ export default function DossierFormModal({
                 Statut
                 </label>
                 <div className="relative">
-                <AlertCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <select
                     id="statut"
                     name="statut"
@@ -304,10 +289,8 @@ export default function DossierFormModal({
                     className="w-full pl-9 pr-4 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none appearance-none"
                     disabled={loading}
                 >
-                    <option value="brouillon">Brouillon</option>
                     <option value="en_cours">En cours</option>
-                    <option value="en_attente">En attente</option>
-                    <option value="termine">Terminé</option>
+                    <option value="boucle">Bouclé</option>
                     <option value="annule">Annulé</option>
                 </select>
                 </div>

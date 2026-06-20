@@ -2,17 +2,17 @@ import db from '../database/db.js';
 
 export const DossierService = {
     async createDossier(dossierData, userId, userRole) {
-        const { titre, description, date_limite, id_instance } = dossierData;
-        
+        const { titre, description, date_limite,  id_responsable } = dossierData;
+        console.log('received: ', dossierData)
         if (!titre || !date_limite) {
             throw new Error("Le titre et la date limite sont requis");
         }
         
         const result = await db.query(
-            `INSERT INTO dossier (titre, description, date_limite, id_instance, cree_par)
+            `INSERT INTO dossiers (titre, description, date_limite, cree_par, id_responsable )
              VALUES ($1, $2, $3, $4, $5)
              RETURNING *`,
-            [titre, description, date_limite, id_instance, userId]
+            [titre, description, date_limite, userId, id_responsable]
         );
         
         return result.rows[0];
@@ -21,13 +21,14 @@ export const DossierService = {
     async getAllDossiers(filters = {}, userId, userRole) {
         let query = `
             SELECT d.*, 
-                   u.nom || ' ' || u.prenom as cree_par,
-                   i.nom as instance,
-                   COUNT(DISTINCT t.id) as total_taches,
+                   u1.nom || ' ' || u1.prenom as cree_par,
+                   u2.nom || ' ' || u2.prenom as responsable,
+                   COUNT(DISTINCT t.id) as total_tache,
+                   COUNT(DISTINCT CASE WHEN t.statut = 'termine' THEN t.id END) as taches_terminees,
                    COALESCE(ROUND(AVG(t.avancement), 2), 0) as taux_achevement
             FROM dossiers d
-            LEFT JOIN users u ON d.cree_par = u.id
-            LEFT JOIN instances i ON d.id_instance = i.id
+            LEFT JOIN users u1 ON d.cree_par = u1.id
+            LEFT JOIN users u2 ON d.id_responsable = u2.id
             LEFT JOIN taches t ON d.id = t.id_dossier
         `;
         
@@ -50,7 +51,7 @@ export const DossierService = {
             params.push(`%${filters.recherche}%`, `%${filters.recherche}%`);
         }
         
-        if (userRole !== 'admin') {
+        if (userRole !== 'admin' && userRole !== 'directeur' ) {
             conditions.push(`d.cree_par = $${paramCounter++}`);
             params.push(userId);
         }
@@ -59,8 +60,8 @@ export const DossierService = {
             query += ' WHERE ' + conditions.join(' AND ');
         }
         
-        query += ` GROUP BY d.id, u.nom, u.prenom, i.nom
-                   ORDER BY d.date_creation DESC`;
+        query += ` GROUP BY d.id, u1.nom, u1.prenom, u2.nom, u2.prenom
+                   ORDER BY d.date_limite ASC`;
         
         if (filters.limite) {
             query += ` LIMIT $${paramCounter++}`;
@@ -115,7 +116,7 @@ export const DossierService = {
             }
         }
         
-        const allowedUpdates = ['titre', 'description', 'date_limite', 'id_instance'];
+        const allowedUpdates = ['titre', 'description', 'date_limite', 'statut', 'id_responsable'];
         const setClauses = [];
         const params = [];
         let paramCounter = 1;
@@ -124,6 +125,13 @@ export const DossierService = {
             if (allowedUpdates.includes(key) && value !== undefined) {
                 setClauses.push(`${key} = $${paramCounter++}`);
                 params.push(value);
+            }
+        }
+        
+        if (updates.statut === 'boucle') {
+            const currentDossier = await db.query('SELECT date_fin_reelle FROM dossiers WHERE id = $1', [dossierId]);
+            if (!currentDossier.rows[0].date_fin_reelle) {
+                setClauses.push(`date_fin_reelle = CURRENT_DATE`);
             }
         }
         
@@ -144,7 +152,7 @@ export const DossierService = {
     
   
     async deleteDossier(dossierId, userId, userRole) {
-        if (userRole !== 'admin') {
+        if (!['admin', 'directeur'].includes(userRole)) {
             const permissionCheck = await db.query(
                 `SELECT cree_par FROM dossiers WHERE id = $1`,
                 [dossierId]
@@ -159,7 +167,7 @@ export const DossierService = {
             [dossierId]
         );
         
-        if (parseInt(taskCheck.rows[0].count) > 0 && userRole !== 'admin') {
+        if (parseInt(taskCheck.rows[0].count) > 0 && !['admin', 'directeur'].includes(userRole)) {
             throw new Error("Impossible de supprimer un dossier avec des tâches existantes. Supprimez d'abord les tâches ou contactez l'administrateur.");
         }
         
@@ -175,13 +183,14 @@ export const DossierService = {
     async getStatistics(userId, userRole) {
         let query = `
         SELECT 
-                COUNT(DISTINCT d.id) as totalDossiers,
-                (SELECT COUNT(*) from users) AS totalUsers,
+                COUNT(DISTINCT d.id) as total_dossiers,
+                (SELECT COUNT(*) from users) AS total_users,
                 COUNT(DISTINCT CASE WHEN d.statut = 'boucle' THEN d.id END) as dossiers_termines,
-                COUNT(DISTINCT t.id) as totalTasks,
+                COUNT(DISTINCT CASE WHEN d.statut = 'boucle' AND (d.date_fin_reelle <= d.date_limite OR d.date_fin_reelle IS NULL) THEN d.id END) as dossiers_termines_a_temps,
+                COUNT(DISTINCT t.id) as total_taches,
                 COUNT(DISTINCT CASE WHEN t.statut = 'termine' THEN t.id END) as taches_terminees,
-                COALESCE(ROUND(AVG(t.avancement), 2), 0) as completionRate,
-                COUNT(DISTINCT t.id_intervenant) as activeUsers
+                COALESCE(ROUND(AVG(t.avancement), 2), 0) as completion_rate,
+                COUNT(DISTINCT t.id_intervenant) as active_users
             FROM dossiers d
             LEFT JOIN taches t ON d.id = t.id_dossier
             LEFT JOIN users u ON u.id = t.id_intervenant
@@ -189,7 +198,7 @@ export const DossierService = {
         
         const params = [];
         
-        if (userRole !== 'admin') {total_dossier
+        if (!['admin', 'directeur'].includes(userRole)) {
             query += ` WHERE d.cree_par = $1`;
             params.push(userId);
         }
@@ -203,13 +212,36 @@ export const DossierService = {
              JOIN dossiers d ON t.id_dossier = d.id
              WHERE t.date_fin_prevue < CURRENT_DATE 
                AND t.statut != 'termine'
-               ${userRole !== 'admin' ? 'AND d.cree_par = $1' : ''}`,
-            userRole !== 'admin' ? [userId] : []
+               ${!['admin', 'directeur'].includes(userRole) ? 'AND d.cree_par = $1' : ''}`,
+            !['admin', 'directeur'].includes(userRole) ? [userId] : []
         );
         
+        const dossiersParResponsable = await db.query(
+            `SELECT u.nom, u.prenom, COUNT(d.id) as count
+             FROM users u
+             JOIN dossiers d ON d.id_responsable = u.id
+             ${!['admin', 'directeur'].includes(userRole) ? 'WHERE d.cree_par = $1' : ''}
+             GROUP BY u.id, u.nom, u.prenom
+             ORDER BY count DESC`,
+            !['admin', 'directeur'].includes(userRole) ? [userId] : []
+        );
+
+        const tachesParIntervenant = await db.query(
+            `SELECT u.nom, u.prenom, COUNT(t.id) as count
+             FROM users u
+             JOIN taches t ON t.id_intervenant = u.id
+             JOIN dossiers d ON t.id_dossier = d.id
+             ${!['admin', 'directeur'].includes(userRole) ? 'WHERE d.cree_par = $1' : ''}
+             GROUP BY u.id, u.nom, u.prenom
+             ORDER BY count DESC`,
+            !['admin', 'directeur'].includes(userRole) ? [userId] : []
+        );
+
         return {
             ...result.rows[0],
-            taches_en_retard: parseInt(lateTasks.rows[0].taches_en_retard)
+            taches_en_retard: parseInt(lateTasks.rows[0].taches_en_retard),
+            dossiers_par_responsable: dossiersParResponsable.rows,
+            nbre_taches_par_intervenant: tachesParIntervenant.rows
         };
     }
 };

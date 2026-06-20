@@ -1,4 +1,4 @@
-// app/lib/api.ts
+
 import type { Tache } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -36,12 +36,13 @@ async function request(
 
 
 export const getStats = ()=> request('/dossiers/stats', {headers: getHeaders()})
+export const getMyStats = (id: number)=> request(`/dossiers/stats/${id}`,{headers: getHeaders()})
 
-export const login = (email: string, password: string)=>
+export const login = (email: string, mdp: string)=>
   request('/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, mdp: password }),
+      body: JSON.stringify({ email, mdp }),
     })
   
 export const register= (userData: unknown) =>
@@ -126,14 +127,14 @@ export const  getStatistics = () =>
   
   
 export const  createTask = (dossierId: number, data: unknown) =>
-    request(`/dossiers/${dossierId}/taches`, {
+    request(`/dossiers/${dossierId}/taches/create`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
     })
   
 export const  getTasks = (dossierId: number) =>
-    request(`/dossiers/${dossierId}/taches/create`, {
+    request(`/dossiers/${dossierId}/taches`, {
       headers: getHeaders(),
     })
   

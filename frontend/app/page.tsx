@@ -1,9 +1,11 @@
-"use client";
+'use client';
 
-import { SubmitEventHandler, useState } from "react";
+import { SubmitEventHandler, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, XCircle } from "lucide-react";
-
+import { useAuth } from "./hooks/useAuth";
+import type { User } from "@/types";
+import { login } from "@/lib/api";
 export default function LandingPage() {
   const [showLogin, setShowLogin] = useState(false);
   const [formData, setFormData] = useState({
@@ -14,8 +16,19 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [user, setUser] = useState(null);
-
+  const [user, setUser] = useState<User | null>(null);
+  const {user: authedUser} = useAuth()
+  useEffect(()=>{
+    const checkAuthState = async ()=>{
+      if(authedUser){
+        setUser(authedUser);
+        setTimeout(()=> router.push(`/${authedUser?.role_dir}`), 1000)
+      }
+    }
+    checkAuthState()
+  }, [authedUser])
+  
+  
   const handleSubmit: SubmitEventHandler = async (e) => {
     e.preventDefault();
     setError('');
@@ -31,24 +44,18 @@ export default function LandingPage() {
     }
 
   try {
-        const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, mdp })
-      });
-      
-      const apiResponse = await response.json();    
-      if (!response.ok) {
-        setError(apiResponse.error ?? "Échec de la connexion.");
+    console.log(email, mdp);
+    const response = await login(email, mdp)   
+    if (!response.success) {
+        setError(response.error ?? "Échec de la connexion.");
         setIsLoading(false);
         return;
       }
-      const {token, data:user} = apiResponse
-      console.log('token: ', token,'\n user:', user)
+      const {token, data:user} = response
       localStorage.setItem('token', token)
       localStorage.setItem('user', JSON.stringify(user))
       setUser(user);
-      console.log(apiResponse)
+      console.log(response)
       setSuccessMessage(`Bienvenue ${user?.prenom || ''} ! Redirection en cours...`);
       setTimeout(() => {
       if (user) {
@@ -58,7 +65,7 @@ export default function LandingPage() {
 
     } catch (err) {
       console.error(err);
-      setError("Une erreur est survenue. Veuillez réessayer.");
+      setError((err as Error).message);
       setIsLoading(false);
     } finally {
       setIsLoading(false);
@@ -81,12 +88,19 @@ export default function LandingPage() {
 
   return (
     <div className="relative min-h-screen text-white">
+      {/* Preload hint for background image */}
+      <link
+        rel="preload"
+        as="image"
+        href="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920&q=75&fm=webp&fit=crop"
+      />
+
       {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage:
-            "url(https://images.unsplash.com/photo-1454165804606-c3d57bc86b40)",
+            "url(https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920&q=75&fm=webp&fit=crop)",
         }}
       />
 
@@ -199,9 +213,6 @@ export default function LandingPage() {
               >
                 Fermer
               </button>
-              <a href="#" className="text-sm text-primary-600 hover:underline">
-                Mot de passe oublié ?
-              </a>
             </div>
           </div>
         </div>

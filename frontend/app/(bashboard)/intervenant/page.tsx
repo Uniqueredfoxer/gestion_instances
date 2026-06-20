@@ -1,113 +1,168 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/app/hooks/useAuth'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { cn } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
 import { 
   CheckSquare, 
   Clock,
-  Award,
   TrendingUp,
-  FileText,
-  Calendar,
   AlertCircle,
-  Play,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Calendar,
+  FileText,
+  Award,
+  Loader2,
+  ArrowRight
 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { getMyStats, getMyTasks } from '@/lib/api'
 
-// Mock data
-const stats = {
-  assignedTasks: 12,
-  completedTasks: 8,
-  inProgressTasks: 3,
-  pendingTasks: 1,
-  completionRate: 67,
-  onTimeRate: 85,
-  activeDossiers: 4,
-  totalHoursLogged: 42.5,
+interface Task {
+  id: string
+  titre: string
+  statut: 'en_attente' | 'en_cours' | 'termine' | 'annule'
+  priorite: 'basse' | 'moyenne' | 'haute' | 'critique'
+  avancement: number
+  date_echeance: string
+  dossier_reference: string
+  dossier_titre: string
 }
 
-const tasks = [
-  { 
-    id: 1, 
-    title: 'Review Q3 budget proposals', 
-    status: 'In Progress', 
-    priority: 'High',
-    due: '2026-06-20',
-    dossier: 'DT-2026-0089',
-    progress: 60
-  },
-  { 
-    id: 2, 
-    title: 'Update employee handbook', 
-    status: 'Not Started', 
-    priority: 'Medium',
-    due: '2026-07-01',
-    dossier: 'DT-2026-0092',
-    progress: 0
-  },
-  { 
-    id: 3, 
-    title: 'Complete security audit', 
-    status: 'Waiting Validation', 
-    priority: 'Critical',
-    due: '2026-06-15',
-    dossier: 'DT-2026-0076',
-    progress: 95
-  },
-  { 
-    id: 4, 
-    title: 'Prepare monthly report', 
-    status: 'Completed', 
-    priority: 'Medium',
-    due: '2026-06-05',
-    dossier: 'DT-2026-0083',
-    progress: 100
-  },
-]
+interface DashboardStats {
+  totalTasks: number
+  completedTasks: number
+  inProgressTasks: number
+  pendingTasks: number
+  urgentTasks: number
+  completionRate: number
+  onTimeRate: number
+}
 
-const recentActivity = [
-  { id: 1, action: 'Completed task: Review Q3 reports', time: '2 hours ago' },
-  { id: 2, action: 'Updated dossier DT-2026-0089', time: '4 hours ago' },
-  { id: 3, action: 'Logged 2.5 hours on security audit', time: '5 hours ago' },
-]
+export default function Dashboard() {
+  const { user } = useAuth()
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-export default function AgentDashboard() {
-  const { user } = useAuth();
-    console.log(user)
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true)
+      setError('')
+      const [myStats, tasks] = await Promise.all([
+        getMyStats(user.id),
+        getMyTasks(),
+      ])
 
-  return (
-    <div className="space-y-6 p-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            My Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Welcome back, {user?.prenom}! Here's your task overview
-          </p>
+      setStats(myStats.data)
+      setTasks(tasks.data)
+
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err)
+      setError('Une erreur est survenue lors du chargement du tableau de bord')
+    } finally {
+      setLoading(false)
+    }
+  }
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
+
+
+  const getStatusBadge = (status: string) => {
+    const badges = {
+      'en_attente': 'bg-yellow-100 text-yellow-800',
+      'en_cours': 'bg-blue-100 text-blue-800',
+      'terminee': 'bg-green-100 text-green-800',
+      'urgente': 'bg-red-100 text-red-800'
+    }
+    return badges[status as keyof typeof badges] || 'bg-gray-100 text-gray-800'
+  }
+
+  const getStatusLabel = (status: string) => {
+    const labels = {
+      'en_attente': 'En attente',
+      'en_cours': 'En cours',
+      'termine': 'Terminé',
+      'urgente': 'Urgente'
+    }
+    return labels[status as keyof typeof labels] || status
+  }
+
+
+  const getActivityIcon = (type: string) => {
+    const icons = {
+      'task': <CheckCircle className="w-4 h-4 text-green-500" />,
+      'dossier': <FileText className="w-4 h-4 text-blue-500" />,
+      'comment': <AlertCircle className="w-4 h-4 text-yellow-500" />
+    }
+    return icons[type as keyof typeof icons] || <AlertCircle className="w-4 h-4 text-gray-500" />
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-100">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
+          <p className="text-gray-500 text-sm">Chargement de votre tableau de bord...</p>
         </div>
-        <div className="flex gap-3">
-          <Button size="sm">
-            <Play className="w-4 h-4 mr-2" />
-            Start New Task
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          <p>{error}</p>
+          <Button 
+            variant="outline" 
+            className="mt-3"
+            onClick={fetchDashboardData}
+          >
+            Réessayer
           </Button>
         </div>
       </div>
+    )
+  }
 
-      {/* Task Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+  const urgentTasks = tasks.filter(task => {
+    if (task.statut === 'termine' || task.statut === 'annule') return false
+    const dueDate = new Date(task.date_echeance)
+    const today = new Date()
+    const diffTime = dueDate.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays <= 3 && diffDays >= 0
+  })
+
+  return (
+    <div className="space-y-6 p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Mon Tableau de Bord
+          </h1>
+          <p className="text-gray-600 text-sm mt-1">
+            Bonjour {user?.prenom}! Voici un aperçu de vos tâches
+          </p>
+        </div>
+
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Assigned Tasks</p>
-                <p className="text-2xl font-bold text-foreground mt-1">{stats.assignedTasks}</p>
+                <p className="text-sm text-gray-500">Tâches assignées</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {stats?.totalTasks || 0}
+                </p>
               </div>
-              <div className="p-3 bg-primary-50 rounded-lg">
-                <CheckSquare className="w-6 h-6 text-primary-600" />
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <CheckSquare className="w-6 h-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -117,26 +172,13 @@ export default function AgentDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Completion Rate</p>
-                <p className="text-2xl font-bold text-success-500 mt-1">{stats.completionRate}%</p>
-                <p className="text-xs text-success-500 mt-1">↑ 8% this month</p>
+                <p className="text-sm text-gray-500">Taux d&apos;achèvement</p>
+                <p className="text-2xl font-bold text-green-600 mt-1">
+                  {stats?.completionRate || 0}%
+                </p>
               </div>
-              <div className="p-3 bg-success-500/10 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-success-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">In Progress</p>
-                <p className="text-2xl font-bold text-warning-500 mt-1">{stats.inProgressTasks}</p>
-              </div>
-              <div className="p-3 bg-warning-500/10 rounded-lg">
-                <Clock className="w-6 h-6 text-warning-500" />
+              <div className="p-3 bg-green-50 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -146,111 +188,149 @@ export default function AgentDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Hours Logged</p>
-                <p className="text-2xl font-bold text-foreground mt-1">{stats.totalHoursLogged}h</p>
-                <p className="text-xs text-muted-foreground mt-1">This week</p>
+                <p className="text-sm text-gray-500">En cours</p>
+                <p className="text-2xl font-bold text-orange-600 mt-1">
+                  {stats?.inProgressTasks || 0}
+                </p>
               </div>
-              <div className="p-3 bg-primary-50 rounded-lg">
-                <Clock className="w-6 h-6 text-primary-600" />
+              <div className="p-3 bg-orange-50 rounded-lg">
+                <Clock className="w-6 h-6 text-orange-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Tâches urgentes</p>
+                <p className="text-2xl font-bold text-red-600 mt-1">
+                  {urgentTasks.length}
+                </p>
+              </div>
+              <div className="p-3 bg-red-50 rounded-lg">
+                <AlertCircle className="w-6 h-6 text-red-600" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Task List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>My Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {tasks.map((task) => (
-                <div key={task.id} className="p-3 rounded-lg bg-muted">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className={cn(
-                          "text-xs px-2 py-0.5 rounded",
-                          task.priority === 'Critical' && "bg-error-500/10 text-error-500",
-                          task.priority === 'High' && "bg-warning-500/10 text-warning-500",
-                          task.priority === 'Medium' && "bg-primary-50 text-primary-600"
-                        )}>
-                          {task.priority}
-                        </span>
-                        <span className={cn(
-                          "text-xs px-2 py-0.5 rounded",
-                          task.status === 'Completed' && "bg-success-500/10 text-success-500",
-                          task.status === 'In Progress' && "bg-warning-500/10 text-warning-500",
-                          task.status === 'Not Started' && "bg-muted-foreground/10 text-muted-foreground",
-                          task.status === 'Waiting Validation' && "bg-primary-50 text-primary-600"
-                        )}>
-                          {task.status}
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium text-foreground mt-1">{task.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {task.dossier} • Due: {task.due}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center gap-2">
-                        <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary-600 rounded-full transition-all duration-500"
-                            style={{ width: `${task.progress}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-muted-foreground">{task.progress}%</span>
-                      </div>
-                      {task.status !== 'Completed' && (
-                        <Button size="sm" variant="outline" className="mt-2">
-                          Update
-                        </Button>
-                      )}
-                      {task.status === 'Completed' && (
-                        <CheckCircle className="w-5 h-5 text-success-500 mt-2" />
-                      )}
-                    </div>
-                  </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Mes Tâches</CardTitle>
+              <Button variant="link" className="text-sm">
+                Voir toutes
+                <ArrowRight className='w-4 h-4 ml-2'/>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {tasks.length === 0 ? (
+                <div className="text-center py-8">
+                  <CheckCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">Aucune tâche ne vous a encore été assignée</p>
                 </div>
-              ))}
-            </div>
-            <Button variant="link" className="w-full mt-4 text-sm">
-              View All Tasks
-            </Button>
-          </CardContent>
-        </Card>
+              ) : (
+                <div className="space-y-3 max-h-125 overflow-y-auto pr-2">
+                  {tasks.slice(0, 5).map((task) => {
+                    const isUrgent = urgentTasks.some(t => t.id === task.id)
+                    return (
+                      <div 
+                        key={task.id} 
+                        className={`p-4 rounded-lg border ${
+                          isUrgent ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className={`font-medium text-gray-900 ${
+                                task.statut === 'termine' ? 'line-through text-gray-400' : ''
+                              }`}>
+                                {task.titre}
+                              </h3>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(task.statut)}`}>
+                                {getStatusLabel(task.statut)}
+                              </span>
+                              {isUrgent && (
+                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 flex items-center gap-1">
+                                  <AlertCircle className="w-3 h-3" />
+                                  Urgent
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500 flex-wrap">
+                              <span className="flex items-center gap-1">
+                                <FileText className="w-3 h-3" />
+                                {task.dossier_reference}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                Échéance: {new Date(task.date_echeance).toLocaleDateString()}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <span className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-primary rounded-full transition-all"
+                                    style={{ width: `${task.avancement || 0}%` }}
+                                  />
+                                </span>
+                                <span>{task.avancement || 0}%</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="shrink-0">
+                            {task.statut !== 'termine' ? (
+                              <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700 text-white">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Terminer
+                              </Button>
+                            ) : (
+                              <CheckCircle className="w-5 h-5 text-green-500" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
 
         <div className="space-y-6">
           {/* Recent Activity */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
+              <CardTitle className="text-sm">Activité Récente</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3 pb-3 border-b border-border last:border-0">
-                    <div className="w-2 h-2 mt-2 rounded-full bg-primary-600 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm text-foreground">{activity.action}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {0 === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  Aucune activité récente
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Quick Stats */}
+
           <div className="grid grid-cols-2 gap-4">
             <Card>
               <CardContent className="p-4">
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground">On-Time Rate</p>
-                  <p className="text-2xl font-bold text-success-500 mt-1">{stats.onTimeRate}%</p>
+                  <p className="text-sm text-gray-500">Taux ponctualité</p>
+                  <p className="text-2xl font-bold text-green-600 mt-1">
+                    {stats?.onTimeRate || 0}%
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -258,23 +338,52 @@ export default function AgentDashboard() {
             <Card>
               <CardContent className="p-4">
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Active Dossiers</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">{stats.activeDossiers}</p>
+                  <p className="text-sm text-gray-500">Tâches terminées</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                    {stats?.completedTasks || 0}
+                  </p>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Pending Tasks Alert */}
-          {stats.pendingTasks > 0 && (
-            <Card className="border-warning-500/20 bg-warning-500/5">
+          {/* Urgent Tasks Alert */}
+          {urgentTasks.length > 0 && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-red-700">
+                      Tâches urgentes
+                    </p>
+                    <p className="text-xs text-red-600 mt-1">
+                      Vous avez {urgentTasks.length} tâche{urgentTasks.length > 1 ? 's' : ''} à échéance proche
+                    </p>
+                    <Button 
+                      variant="link" 
+                      className="text-xs text-red-600 hover:text-red-700 p-0 h-auto mt-1"
+                    >
+                      Voir les détails
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Achievement */}
+          {stats && stats.completionRate >= 80 && (
+            <Card className="border-green-200 bg-green-50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <AlertTriangle className="w-5 h-5 text-warning-500" />
+                  <Award className="w-5 h-5 text-green-500 shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-warning-500">Pending Tasks</p>
-                    <p className="text-xs text-muted-foreground">
-                      You have {stats.pendingTasks} task awaiting your attention
+                    <p className="text-sm font-medium text-green-700">
+                      Excellent travail!
+                    </p>
+                    <p className="text-xs text-green-600">
+                      Vous avez un taux d&apos;achèvement de {stats.completionRate}%
                     </p>
                   </div>
                 </div>
