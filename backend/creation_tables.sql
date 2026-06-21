@@ -1,8 +1,8 @@
 
 
-CREATE TYPE role_sys           AS ENUM ('admin', 'directeur', 'manager', 'intervenant');
-CREATE TYPE statut_dossier     AS ENUM ('en_cours', 'boucle', 'en_retard', 'annule');
-CREATE TYPE statut_tache       AS ENUM ('a_faire', 'en_cours', 'termine', 'urgente');
+CREATE TYPE role_sys                  AS ENUM ('admin', 'directeur', 'manager', 'intervenant');
+CREATE TYPE statut_dossier            AS ENUM ('en_cours', 'boucle', 'en_retard', 'annule');
+CREATE TYPE statut_tache              AS ENUM ('a_faire', 'en_cours', 'termine', 'urgente');
 CREATE TYPE statut_utilisateur        AS ENUM ('actif', 'inactif', 'suspendu');
 
 
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS dossiers(
     id_responsable      INT REFERENCES users(id),
     date_creation    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_dossier_date_limite CHECK (date_limite > date_creation::DATE),
-    CONSTRAINT chk_dossier_date_fin_reelle CHECK (date_fin_reelle IS NULL OR date_fin_reelle >= date_creation::DATE)
+    CONSTRAINT chk_dossier_date_fin_reelle CHECK (boucle_le IS NULL OR boucle_le >= date_creation::DATE)
 );
 
 CREATE TABLE IF NOT EXISTS taches(
@@ -58,7 +58,8 @@ CREATE TABLE IF NOT EXISTS alertes (
     id_tache  INT NOT NULL REFERENCES taches(id),
     date_creation   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
+/*initial user */
+INSERT INTO users (nom, prenom, email, mdp, poste, role_dir) VALUES ('DERBO', 'Adama', 'derboadama31@gmail.com', '@Adam123', 'Developpeur', 'admin');
 
 CREATE VIEW vue_avancement_dossiers AS
 SELECT
@@ -82,15 +83,6 @@ SELECT
     COUNT(DISTINCT id)                      AS total_dossiers,
     COALESCE(ROUND(AVG(avancement), 2), 0)  AS taux_global_execution
 FROM taches;
-
-
-DROP INDEX idx_dossier_instance;
-DROP INDEX idx_dossier_statut;     
-DROP INDEX idx_dossier_date_limite;
-DROP INDEX idx_tache_dossier;
-DROP INDEX idx_tache_intervenant;
-DROP INDEX idx_alerte_dossier;
-DROP INDEX idx_alerte_destinataire;
 
 CREATE INDEX IF NOT EXISTS idx_dossier_instance    ON dossiers(id_instance);
 CREATE INDEX IF NOT EXISTS idx_dossier_statut      ON dossiers(statut);
