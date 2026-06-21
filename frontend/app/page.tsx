@@ -19,8 +19,15 @@ export default function LandingPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [, setUser] = useState<User | null>(null);
   const { user: authedUser } = useAuth();
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     const checkAuthState = async () => {
       if (authedUser && authedUser.role_dir) {
         setUser(authedUser);
@@ -28,7 +35,7 @@ export default function LandingPage() {
       }
     };
     checkAuthState();
-  }, [authedUser, router]);
+  }, [authedUser, router, isMounted]);
   
   const handleSubmit: SubmitEventHandler = async (e) => {
     e.preventDefault();
@@ -90,6 +97,10 @@ export default function LandingPage() {
     setSuccessMessage('');
     setFormData({ email: '', mdp: '' });
   };
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <div className="relative min-h-screen text-white">
