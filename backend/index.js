@@ -9,7 +9,7 @@ import alertRoutes from './routes/alertRoutes.js'
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+let PORT = process.env.PORT || 5000;
 if (!PORT){
     console.log("cannot get port from the env vars...");
     console.log("falling back to default port 5000");

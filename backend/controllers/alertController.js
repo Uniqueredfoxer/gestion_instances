@@ -33,7 +33,7 @@ export const AlertController = {
       
       const alert = await AlertService.getById(parseInt(id));
       
-      if (!alert)
+      if (!alert) {
         return res.status(404).json({
           success: false,
           error: 'Alert not found'
