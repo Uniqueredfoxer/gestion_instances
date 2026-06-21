@@ -4,21 +4,15 @@ import { SubmitEventHandler, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, XCircle } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
-import type { User } from "@/types";
-import { login } from "@/lib/api";
 
 export default function LandingPage() {
   const [showLogin, setShowLogin] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    mdp: ''
-  });
+  const [formData, setFormData] = useState({ email: '', mdp: '' });
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [, setUser] = useState<User | null>(null);
-  const { user: authedUser } = useAuth();
+  const { user: authedUser, login: handleContextLogin } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -27,14 +21,9 @@ export default function LandingPage() {
 
   useEffect(() => {
     if (!isMounted) return;
-
-    const checkAuthState = async () => {
-      if (authedUser && authedUser.role_dir) {
-        setUser(authedUser);
-        setTimeout(() => router.push(`/${authedUser.role_dir}`), 1000);
-      }
-    };
-    checkAuthState();
+    if (authedUser && authedUser.role_dir) {
+      router.push(`/${authedUser.role_dir}`);
+    }
   }, [authedUser, router, isMounted]);
   
   const handleSubmit: SubmitEventHandler = async (e) => {
@@ -52,8 +41,8 @@ export default function LandingPage() {
     }
 
     try {
-      console.log(email, mdp);
-      const response = await login(email, mdp);   
+      
+      const response = await handleContextLogin(email, mdp);   
       
       if (!response.success) {
         setError(response.error ?? "Échec de la connexion.");
@@ -61,18 +50,7 @@ export default function LandingPage() {
         return;
       }
 
-      const { token, data: apiUser } = response;
-      
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(apiUser));
-      setUser(apiUser);
-      
-      console.log(response);
-      setSuccessMessage(`Bienvenue ${apiUser?.prenom || ''} ! Redirection en cours...`);
-      
-      if (apiUser && apiUser.role_dir) {
-        router.push(`/${apiUser.role_dir}`);
-      }
+      setSuccessMessage(`Bienvenue ${response.user?.prenom || ''} ! Redirection en cours...`);
 
     } catch (err) {
       console.error(err);
