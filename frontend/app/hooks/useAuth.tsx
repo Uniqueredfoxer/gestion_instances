@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: resData.error || "Échec de la connexion." };
       }
       
-      const { token, userWithouthPassword: userData } = resData.data;
+      const { token, user: userData } = resData.data;
       
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userData));
