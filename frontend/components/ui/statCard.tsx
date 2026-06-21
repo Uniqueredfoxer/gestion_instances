@@ -35,7 +35,7 @@ export function StatCard({ title, value, icon: Icon, trend, color = 'primary' }:
             </p>
           )}
         </div>
-        <div className={`p-3 rounded-xl ${colorStyles[color]}`}>
+        <div className={`p-3 rounded-xl ${colorStyles[color as keyof typeof colorStyles]}`}>
           <Icon className="w-6 h-6" />
         </div>
       </div>
