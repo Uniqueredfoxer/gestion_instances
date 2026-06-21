@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -25,17 +25,20 @@ import type { User } from '@/types'
 
 interface SidebarProps {
   collapsed: boolean
-  isMobileOpen: boolean
-  onMobileClose: () => void
+  isMobileOpen?: boolean
+  onMobileClose?: () => void
   onToggle: () => void
-  user: User | null
-  
 }
 
-export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
-  const { logout } = useAuth()
+export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+  const { user, loading, logout } = useAuth()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const navigation = {
     admin: [
@@ -60,6 +63,23 @@ export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
   const handleLogout = async () => {
     logout()
   }
+
+  if (!isMounted || loading) {
+    return (
+      <aside className={cn(
+        "fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-30",
+        collapsed ? "md:w-20" : "md:w-64",
+        "w-64"
+      )}>
+        <div className="h-16 flex items-center px-4 border-b border-gray-200">
+          <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-lg" />
+        </div>
+      </aside>
+    );
+  }
+
+  const currentRole = user?.role_dir && user.role_dir in navigation ? user.role_dir : 'intervenant';
+  const currentNavigation = navigation[currentRole as keyof typeof navigation];
 
   return (
     <>
@@ -104,7 +124,7 @@ export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {navigation[user?.role_dir || 'intervenant'].map((item) => {
+          {currentNavigation.map((item) => {
             const isActive = pathname === item.href
             return (
               <Link
@@ -136,7 +156,7 @@ export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
             collapsed ? "md:flex-col md:items-center md:gap-2" : "flex-row"
           )}>
             <Avatar
-              name={user?.prenom + ' ' + user?.nom}
+              name={user ? `${user.prenom} ${user.nom}` : "User"}
               src=''
               size={collapsed ? "sm" : "md"}
               className="md:block"
