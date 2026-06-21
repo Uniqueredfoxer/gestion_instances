@@ -50,7 +50,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         isMobileOpen={isMobileOpen}
         onMobileClose={handleMobileClose}
-        user={user}
       />
 
       <Header 
