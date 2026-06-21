@@ -34,7 +34,7 @@ export interface Tache {
   description: string,
   date_creation?: string;
   date_debut?: string;
-  date_fin?: string;
+  date_fin: string;
   avancement: number;
   statut: 'a_faire' | 'en_cours' | 'termine';
   id_dossier: number;

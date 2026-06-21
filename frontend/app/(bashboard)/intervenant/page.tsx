@@ -39,6 +39,9 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
+      if (!user || !user.id) {
+          return; 
+      }
       setLoading(true)
       setError('')
       const [myStats, tasks] = await Promise.all([
@@ -120,7 +123,7 @@ export default function Dashboard() {
   }
 
   const urgentTasks = tasks.filter(task => {
-    if (task.statut === 'termine' || task.statut === 'annule') return false
+    if (task.statut === 'termine') return false
     const dueDate = new Date(task.date_fin)
     const today = new Date()
     const diffTime = dueDate.getTime() - today.getTime()

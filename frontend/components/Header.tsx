@@ -12,7 +12,7 @@ interface HeaderProps {
     email: string
     role_dir: string
     avatarUrl?: string | null
-  }
+  } | null
   sidebarCollapsed?: boolean
 }
 

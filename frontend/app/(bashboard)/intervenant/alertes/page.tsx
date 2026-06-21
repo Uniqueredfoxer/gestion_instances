@@ -40,19 +40,8 @@ export default function AlertsPage() {
     await fetchAlerts()
   }
 
-  const handleResolve = (id: number) => {
-    setAlerts(alerts.map(alert => 
-      alert.id === id 
-        ? { ...alert, resolved: true }
-        : alert
-    ))
-  }
 
-  const handleMarkAllResolved = () => {
-    setAlerts(alerts.map(alert => ({ ...alert, resolved: true })))
-  }
-
-  const unresolvedCount = alerts.filter(a => !a.resolved && !a.inProgress).length
+  
   const filteredAlerts = alerts
 
   const getStatusColor = (status: AlertStatus) => {
@@ -70,19 +59,7 @@ export default function AlertsPage() {
       'In Progress': 'En cours',
       'Resolved': 'Résolu'
     }
-    return labels[status] || status
-  }
-
-  const formatTime = (date?: string) => {
-    if (!date) return 'Date inconnue'
-    const now = new Date()
-    const alertDate = new Date(date)
-    const diffHours = Math.floor((now.getTime() - alertDate.getTime()) / (1000 * 60 * 60))
-    
-    if (diffHours < 1) return 'À l\'instant'
-    if (diffHours < 24) return `Il y a ${diffHours}h`
-    if (diffHours < 48) return 'Hier'
-    return new Date(date).toLocaleDateString('fr-FR')
+    return labels[status as keyof typeof labels] || status
   }
 
   return (
@@ -99,17 +76,7 @@ export default function AlertsPage() {
             <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
             Rafraîchir
           </Button>
-          {unresolvedCount > 0 && (
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={handleMarkAllResolved}
-              className="flex items-center gap-2"
-            >
-              <CheckCheck className="w-4 h-4" />
-              Tout résoudre
-            </Button>
-          )}
+          
         </div>
       </div>
 
@@ -126,10 +93,10 @@ export default function AlertsPage() {
                 <Bell className="w-10 h-10  text-blue-700" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800">
-                Vous n'avez reçu aucune alerte pour le moment
+                Vous n&apos;avez reçu aucune alerte pour le moment
               </h3>
               <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
-                Les alertes apparaîtront ici lorsqu'elles seront disponibles
+                Les alertes apparaîtront ici lorsqu&apos;elles seront disponibles
               </p>
             </CardContent>
           </Card>

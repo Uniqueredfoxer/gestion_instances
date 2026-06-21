@@ -43,10 +43,10 @@ export default function UsersPage() {
   }, [])
 
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this user?')) return
     try {
-      await deleteUser(parseInt(id))
+      await deleteUser(id)
       setUsers(users.filter(u => u.id !== id))
     } catch (err) {
       alert('Failed to delete user')
@@ -193,7 +193,7 @@ export default function UsersPage() {
                           <button 
                             className="p-1 hover:bg-red-50 rounded transition-colors text-gray-500 hover:text-red-600"
                             title="Delete"
-                            onClick={() => handleDelete(user.id)}
+                            onClick={() => user.id &&handleDelete(user.id)}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

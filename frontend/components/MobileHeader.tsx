@@ -12,7 +12,7 @@ interface MobileHeaderProps {
     email: string
     role_dir: string
     avatarUrl?: string | null
-  }
+  } | null
   isMobileOpen?: boolean
   onMenuToggle?: () => void
 }

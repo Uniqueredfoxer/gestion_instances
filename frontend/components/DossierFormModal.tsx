@@ -108,7 +108,7 @@ export default function DossierFormModal({
 
     try {
       console.log('Submitting formData: ', formData)
-      const response = dossierToEdit ? await updateDossier(dossierToEdit.id, formData) : await createDossier(formData)
+      const response = dossierToEdit ? await updateDossier(dossierToEdit.id!, formData) : await createDossier(formData)
       console.log(response.data)
       const data = response.data
 

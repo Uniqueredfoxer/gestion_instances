@@ -25,8 +25,11 @@ import type { User } from '@/types'
 
 interface SidebarProps {
   collapsed: boolean
+  isMobileOpen: boolean
+  onMobileClose: () => void
   onToggle: () => void
-  user: User
+  user: User | null
+  
 }
 
 export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {

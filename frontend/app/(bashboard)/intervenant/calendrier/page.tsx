@@ -38,23 +38,6 @@ export default function CalendarPage() {
 
     const upcomingEvents: typeof Array[] = []
  
-    const getEventTypeColor = (type: string) => {
-        const colors = {
-            deadline: 'bg-danger/10 text-danger border-danger/20',
-            task: 'bg-primary/10 text-primary border-primary/20',
-            meeting: 'bg-secondary/10 text-secondary border-secondary/20',
-        }
-        return colors[type as keyof typeof colors] || colors.task
-    }
-
-    const getEventIcon = (type: string) => {
-        const icons = {
-            deadline: <AlertCircle className="w-3 h-3" />,
-            task: <ListTodo className="w-3 h-3" />,
-            meeting: <Clock className="w-3 h-3" />,
-        }
-        return icons[type as keyof typeof icons] || icons.task
-    }
 
     return (
         <div className="space-y-6 p-4 md:p-6">
@@ -71,7 +54,7 @@ export default function CalendarPage() {
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
                         <CalendarRange className="w-4 h-4" />
-                        Vue d'ensemble
+                        Vue d&apos;ensemble
                     </Button>
                     <Button size="sm" className="flex items-center gap-2">
                         <CalendarIcon className="w-4 h-4" />
@@ -145,7 +128,7 @@ export default function CalendarPage() {
                                     <ChevronLeft className="w-4 h-4" />
                                 </Button>
                                 <Button variant="outline" size="sm" className="text-xs">
-                                    Aujourd'hui
+                                    Aujourd&apos;hui
                                 </Button>
                                 <Button variant="outline" size="sm" onClick={nextMonth}>
                                     <ChevronRight className="w-4 h-4" />

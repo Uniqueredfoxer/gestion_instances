@@ -71,7 +71,7 @@ export default function DirecteurOverviewPage() {
     },
     {
       title: 'Dossiers Traités à Temps',
-      value: stats?.dossiers_termines_a_temps || 0,
+      value: stats?.dossiers_termines || 0,
       icon: CheckCheck,
       color: 'success'
     }
@@ -84,7 +84,7 @@ export default function DirecteurOverviewPage() {
           {getGreeting()} {user?.prenom},
         </h1>
         <p className="text-gray-600 mt-1">
-          Bienvenue dans votre espace directeur. Voici l'état d'avancement des dossiers.
+          Bienvenue dans votre espace directeur. Voici l&apos;état d&apos;avancement des dossiers.
         </p>
       </div>
 
@@ -96,7 +96,7 @@ export default function DirecteurOverviewPage() {
             title={kpi.title}
             value={kpi.value}
             icon={kpi.icon}
-            color={kpi.color as any}
+            color={kpi.color as string}
           />
         ))}
       </div>
