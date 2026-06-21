@@ -20,14 +20,12 @@ export const DossierController = {
             res.status(400).json({ success: false, error: err.message });
         }
     },
-    
-  
     async getAllDossiers(req, res) {
         try {
-            const { statut, date_debut, date_fin, recherche, limite, decalage } = req.query;
+            const { statut, date_limite, recherche, limite, decalage } = req.query;
             
             const dossiers = await DossierService.getAllDossiers(
-                { statut, date_debut, date_fin, recherche, limite, decalage },
+                { statut, date_limite, recherche, limite, decalage },
                 req.user.id,
                 req.user.role
             );
@@ -37,8 +35,6 @@ export const DossierController = {
             res.status(400).json({ success: false, error: err.message });
         }
     },
-    
-
     async getDossierById(req, res) {
         try {
             const dossier = await DossierService.getDossierById(
@@ -56,8 +52,6 @@ export const DossierController = {
             res.status(403).json({ success: false, error: err.message });
         }
     },
-    
-
     async updateDossier(req, res) {
         try {
             const dossier = await DossierService.updateDossier(
@@ -72,8 +66,6 @@ export const DossierController = {
             res.status(400).json({ success: false, error: err.message });
         }
     },
-    
-
     async deleteDossier(req, res) {
         try {
             await DossierService.deleteDossier(
@@ -87,8 +79,6 @@ export const DossierController = {
             res.status(400).json({ success: false, error: err.message });
         }
     },
-    
-    
     async getStatistics(req, res) {
         try {
             if (!['admin', 'directeur'].includes(req.user.role)) {
@@ -101,8 +91,6 @@ export const DossierController = {
             res.status(400).json({ success: false, error: err.message });
         }
     },
-    
-
     async createTask(req, res) {
         try {
             const task = await TacheService.createTask(
@@ -116,8 +104,7 @@ export const DossierController = {
         } catch (err) {
             res.status(400).json({ success: false, error: err.message });
         }
-    },
-    
+    }, 
     async getTasks(req, res) {
         try {
             const tasks = await TacheService.getTasksByDossier(
@@ -131,7 +118,6 @@ export const DossierController = {
             res.status(400).json({ success: false, error: err.message });
         }
     },
-    
     async updateTask(req, res) {
         try {
             const task = await TacheService.updateTask(
@@ -146,7 +132,6 @@ export const DossierController = {
             res.status(400).json({ success: false, error: err.message });
         }
     },
-    
     async validateTaskCompletion(req, res) {
         try {
             const { approuve, commentaires } = req.body;

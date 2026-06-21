@@ -24,8 +24,7 @@ export const DossierService = {
                    u1.nom || ' ' || u1.prenom as cree_par,
                    u2.nom || ' ' || u2.prenom as responsable,
                    COUNT(DISTINCT t.id) as total_tache,
-                   COUNT(DISTINCT CASE WHEN t.statut = 'termine' THEN t.id END) as taches_terminees,
-                   COALESCE(ROUND(AVG(t.avancement), 2), 0) as taux_achevement
+                   COUNT(DISTINCT CASE WHEN t.statut = 'termine' THEN t.id END) as taches_terminees
             FROM dossiers d
             LEFT JOIN users u1 ON d.cree_par = u1.id
             LEFT JOIN users u2 ON d.id_responsable = u2.id
@@ -41,9 +40,9 @@ export const DossierService = {
             params.push(filters.statut);
         }
         
-        if (filters.date_debut && filters.date_fin) {
+        if (filters.date_limite) {
             conditions.push(`d.date_limite BETWEEN $${paramCounter++} AND $${paramCounter++}`);
-            params.push(filters.date_debut, filters.date_fin);
+            params.push(filters.date_limite);
         }
         
         if (filters.recherche) {
@@ -106,7 +105,7 @@ export const DossierService = {
     },
     
     async updateDossier(dossierId, updates, userId, userRole) {
-        if (userRole !== 'admin') {
+        if (userRole !== 'admin' && userRole !== 'directeur') {
             const permissionCheck = await db.query(
                 `SELECT cree_par FROM dossiers WHERE id = $1`,
                 [dossierId]
@@ -129,9 +128,9 @@ export const DossierService = {
         }
         
         if (updates.statut === 'boucle') {
-            const currentDossier = await db.query('SELECT date_fin_reelle FROM dossiers WHERE id = $1', [dossierId]);
-            if (!currentDossier.rows[0].date_fin_reelle) {
-                setClauses.push(`date_fin_reelle = CURRENT_DATE`);
+            const currentDossier = await db.query('SELECT boucle_le FROM dossiers WHERE id = $1', [dossierId]);
+            if (!currentDossier.rows[0].boucle_le) {
+                setClauses.push(`boucle_le = CURRENT_DATE`);
             }
         }
         
@@ -186,14 +185,13 @@ export const DossierService = {
                 COUNT(DISTINCT d.id) as total_dossiers,
                 (SELECT COUNT(*) from users) AS total_users,
                 COUNT(DISTINCT CASE WHEN d.statut = 'boucle' THEN d.id END) as dossiers_termines,
-                COUNT(DISTINCT CASE WHEN d.statut = 'boucle' AND (d.date_fin_reelle <= d.date_limite OR d.date_fin_reelle IS NULL) THEN d.id END) as dossiers_termines_a_temps,
+                COUNT(DISTINCT CASE WHEN d.statut = 'boucle' AND (d.boucle_le <= date_limite OR d.boucle_le IS NULL) THEN d.id END) as dossiers_termines_a_temps,
                 COUNT(DISTINCT t.id) as total_taches,
                 COUNT(DISTINCT CASE WHEN t.statut = 'termine' THEN t.id END) as taches_terminees,
-                COALESCE(ROUND(AVG(t.avancement), 2), 0) as completion_rate,
-                COUNT(DISTINCT t.id_intervenant) as active_users
+                COUNT(DISTINCT t.id_responsable) as active_users
             FROM dossiers d
             LEFT JOIN taches t ON d.id = t.id_dossier
-            LEFT JOIN users u ON u.id = t.id_intervenant
+            LEFT JOIN users u ON u.id = t.id_responsable
         `;
         
         const params = [];
@@ -210,7 +208,7 @@ export const DossierService = {
             `SELECT COUNT(*) as taches_en_retard
              FROM taches t
              JOIN dossiers d ON t.id_dossier = d.id
-             WHERE t.date_fin_prevue < CURRENT_DATE 
+             WHERE t.date_fin < CURRENT_DATE 
                AND t.statut != 'termine'
                ${!['admin', 'directeur'].includes(userRole) ? 'AND d.cree_par = $1' : ''}`,
             !['admin', 'directeur'].includes(userRole) ? [userId] : []
@@ -229,7 +227,7 @@ export const DossierService = {
         const tachesParIntervenant = await db.query(
             `SELECT u.nom, u.prenom, COUNT(t.id) as count
              FROM users u
-             JOIN taches t ON t.id_intervenant = u.id
+             JOIN taches t ON t.id_responsable = u.id
              JOIN dossiers d ON t.id_dossier = d.id
              ${!['admin', 'directeur'].includes(userRole) ? 'WHERE d.cree_par = $1' : ''}
              GROUP BY u.id, u.nom, u.prenom

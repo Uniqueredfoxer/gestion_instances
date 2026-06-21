@@ -85,25 +85,25 @@ export default function OverviewPage() {
   const kpis = [
     {
       title: 'Total Dossiers',
-      value: stats?.totaldossiers || 0,
+      value: stats?.total_dossiers || 0,
       icon: FolderKanban,
       color: 'primary'
     },
     {
       title: 'Total Utilisateur',
-      value: stats?.totalusers || 0,
+      value: stats?.total_users || 0,
       icon: Users,
       color: 'secondary'
     },
     {
       title: 'Taux de MEO global',
-      value: `${stats?.taux_completion || 0}%`,
+      value: `${stats.total_dossiers > 0? (stats.dossiers_termines/stats.total_dossiers)*100: 0}%`,
       icon: TrendingUp,
       color: 'success'
     },
     {
       title: 'Dossier traités',
-      value: stats?.dossier_termines || 0,
+      value: stats?.dossiers_termines || 0,
       icon: CheckCheck,
       color: 'success'
     },

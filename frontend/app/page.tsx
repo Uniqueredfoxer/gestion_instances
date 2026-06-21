@@ -22,7 +22,7 @@ export default function LandingPage() {
     const checkAuthState = async ()=>{
       if(authedUser){
         setUser(authedUser);
-        setTimeout(()=> router.push(`/${authedUser?.role_dir}`), 1000)
+        setTimeout(()=> router.push(`/${authedUser?.role_dir}` || '/'), 1000)
       }
     }
     checkAuthState()
@@ -57,11 +57,9 @@ export default function LandingPage() {
       setUser(user);
       console.log(response)
       setSuccessMessage(`Bienvenue ${user?.prenom || ''} ! Redirection en cours...`);
-      setTimeout(() => {
       if (user) {
           router.push(user.role_dir);
       }
-      }, 1500);
 
     } catch (err) {
       console.error(err);
@@ -88,14 +86,14 @@ export default function LandingPage() {
 
   return (
     <div className="relative min-h-screen text-white">
-      {/* Preload hint for background image */}
+
       <link
         rel="preload"
         as="image"
         href="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920&q=75&fm=webp&fit=crop"
       />
 
-      {/* Background Image */}
+
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
@@ -104,17 +102,16 @@ export default function LandingPage() {
         }}
       />
 
-      {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/60" />
 
-      {/* Content */}
+
       <div className="relative flex min-h-screen flex-col items-center justify-center text-center px-6">
         <h1 className="text-4xl font-bold tracking-tight">
-          Instances Manager
+          DirectTrack ESI 
         </h1>
 
         <p className="mt-3 text-white/80 max-w-md">
-          Plateforme de gestion des instances, documents et utilisateurs
+          Plateforme de gestion des instances de la direction de l&apos;ESI
         </p>
 
         <button
@@ -125,10 +122,9 @@ export default function LandingPage() {
         </button>
       </div>
 
-      {/* Login Modal */}
       {showLogin && (
         <div 
-          className="fixed inset-0 flex items-center justify-center bg-black/70 z-50"
+          className="fixed inset-0 flex items-center px-4 justify-center bg-black/70 z-50"
           onClick={handleCloseModal}
         >
           <div 
@@ -139,7 +135,7 @@ export default function LandingPage() {
               Connexion
             </h2>
 
-            {/* ✅ Success Message */}
+        
             {successMessage && (
               <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 animate-fade-in">
                 <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
@@ -147,7 +143,6 @@ export default function LandingPage() {
               </div>
             )}
 
-            {/* Error Message */}
             {error && (
               <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
                 <XCircle className="w-5 h-5 text-red-500 shrink-0" />

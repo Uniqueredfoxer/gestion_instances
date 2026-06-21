@@ -72,9 +72,9 @@ export default function AlertsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Alerts</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Alertes</h1>
         <p className="text-gray-600 text-sm mt-1">
-          Monitor system alerts and notifications
+          Gerer les alertes du système
         </p>
       </div>
 
@@ -83,7 +83,7 @@ export default function AlertsPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Total Alerts</p>
+                <p className="text-sm text-gray-500">Total Alertes</p>
                 <p className="text-2xl font-bold text-gray-900">{alerts.length}</p>
               </div>
               <div className="p-3 bg-gray-100 rounded-lg">
@@ -97,8 +97,8 @@ export default function AlertsPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Unresolved</p>
-                <p className="text-2xl font-bold text-orange-600">10</p>
+                <p className="text-sm text-gray-500">Non Résolues</p>
+                <p className="text-2xl font-bold text-orange-600">0</p>
               </div>
               <div className="p-3 bg-orange-50 rounded-lg">
                 <AlertTriangle className="w-5 h-5 text-orange-600" />
@@ -111,8 +111,8 @@ export default function AlertsPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Resolved</p>
-                <p className="text-2xl font-bold text-green-600">20</p>
+                <p className="text-sm text-gray-500">Résolues</p>
+                <p className="text-2xl font-bold text-green-600">0</p>
               </div>
               <div className="p-3 bg-green-50 rounded-lg">
                 <CheckCircle className="w-5 h-5 text-green-600" />
@@ -127,7 +127,7 @@ export default function AlertsPage() {
           <Card>
             <CardContent className="p-8 text-center text-gray-500">
               <CheckCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>No alerts to display</p>
+              <p>Aucune alerte pour le moment</p>
             </CardContent>
           </Card>
         ) : (

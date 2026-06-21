@@ -1,7 +1,0 @@
-{
-    "files.autoSave": "afterDelay",
-    "editor.fontSize": 15,
-    "editor.fontFamily": "'JetBrain Mono Bold', 'Droid Sans Mono', 'monospace', monospace",
-    "editor.formatOnPaste": true,
-    "editor.formatOnSave": true
-}

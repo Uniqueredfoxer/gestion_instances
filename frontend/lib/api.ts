@@ -171,4 +171,5 @@ export const  requestCompletion = (taskId: number) =>
       method: 'POST',
       headers: getHeaders(),
     })
-export const getAllAlerts = ()=> request('/alertes', {headers: getHeaders()})
+export const getUserAlerts = () => request('/alertes/mes-alertes', { headers: getHeaders() })
+export const getAllAlerts = () => request('/alertes', { headers: getHeaders() })

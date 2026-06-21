@@ -7,7 +7,7 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 const DB_URL = process.env.DB_URL
-const file_path = path.join(process.cwd() ,"creation_tables_instances.sql")
+const file_path = path.join(process.cwd() ,"creation_tables.sql")
 console.log("path: ",file_path)
 
 if(!DB_URL){

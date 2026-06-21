@@ -3,16 +3,7 @@
 CREATE TYPE role_sys           AS ENUM ('admin', 'directeur', 'manager', 'intervenant');
 CREATE TYPE statut_dossier     AS ENUM ('en_cours', 'boucle', 'en_retard', 'annule');
 CREATE TYPE statut_tache       AS ENUM ('a_faire', 'en_cours', 'termine', 'urgente');
-CREATE TYPE role_intervention  AS ENUM ('rapporteur', 'contributeur', 'validateur', 'suivi_evaluateur');
-CREATE TYPE user_status        AS ENUM ('actif', 'inactif', 'suspendu');
-CREATE TYPE statu_validation   AS ENUM ('en_attente', 'approuvee', 'rejetee');
-
-CREATE TABLE IF NOT EXISTS instances(
-    id           SERIAL       PRIMARY KEY,
-    nom          VARCHAR(100) NOT NULL,
-    date_reunion DATE         NOT NULL,
-    description  TEXT
-);
+CREATE TYPE statut_utilisateur        AS ENUM ('actif', 'inactif', 'suspendu');
 
 
 CREATE TABLE IF NOT EXISTS users(
@@ -23,7 +14,7 @@ CREATE TABLE IF NOT EXISTS users(
     mdp                 VARCHAR(255)    NOT NULL,
     poste               VARCHAR(100)    NOT NULL,
     role_dir            role_sys        DEFAULT 'intervenant',
-    statut              user_status DEFAULT 'actif',
+    statut              statut_utilisateur DEFAULT 'actif',
     date_creation       TIMESTAMP               DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -32,9 +23,9 @@ CREATE TABLE IF NOT EXISTS dossiers(
     id       SERIAL       PRIMARY KEY,
     titre            VARCHAR(150) NOT NULL,
     description      TEXT,
-    cree_par INT REFERENCES users(id);
+    cree_par INT REFERENCES users(id),
     date_limite      DATE         NOT NULL,
-    date_fin_reelle  DATE,
+    boucle_le        DATE,
     statut           statut_dossier DEFAULT 'en_cours',
     id_responsable      INT REFERENCES users(id),
     date_creation    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
@@ -45,24 +36,17 @@ CREATE TABLE IF NOT EXISTS dossiers(
 CREATE TABLE IF NOT EXISTS taches(
     id                      SERIAL       PRIMARY KEY,
     libelle                 VARCHAR(150) NOT NULL,
+    description             TEXT,
     date_creation           TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-    date_debut              DATE,
-    date_fin_prevue         DATE,
-    avancement              INT          DEFAULT 0 CHECK (avancement >= 0 AND avancement <= 100),
+    date_fin                DATE,
     statut                  statut_tache DEFAULT 'a_faire',
     id_dossier              INT NOT NULL REFERENCES dossiers(id),
     id_responsable          INT NOT NULL REFERENCES users(id),
     cree_par                INT REFERENCES users(id),
-    necessite_validation    BOOLEAN DEFAULT TRUE,
-    valide_par              INT REFERENCES users(id),
-    validee_le               TIMESTAMP,
-    demande_validation_le   TIMESTAMP,
-    demande_validation_par  INT REFERENCES users(id),
     CONSTRAINT chk_tache_dates
         CHECK (
-            date_debut      IS NULL OR
-            date_fin_prevue IS NULL OR
-            date_debut <= date_fin_prevue
+            date_fin IS NULL OR
+            date_fin >= date_creation::DATE
         )
 );
 
@@ -70,10 +54,9 @@ CREATE TABLE IF NOT EXISTS taches(
 CREATE TABLE IF NOT EXISTS alertes (
     id       SERIAL    PRIMARY KEY,
     message         TEXT      NOT NULL,
-    date_creation   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    read  BOOLEAN   DEFAULT FALSE,
     id_dossier      INT NOT NULL REFERENCES dossiers(id),
-    id_destinataire INT NOT NULL REFERENCES users(id)
+    id_tache  INT NOT NULL REFERENCES taches(id),
+    date_creation   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -100,17 +83,6 @@ SELECT
     COALESCE(ROUND(AVG(avancement), 2), 0)  AS taux_global_execution
 FROM taches;
 
-
-CREATE TABLE IF NOT EXISTS demandes_validation (
-    id SERIAL PRIMARY KEY,
-    id_tache INT REFERENCES taches(id) ON DELETE CASCADE,
-    demandee_par INT REFERENCES users(id),
-    demandee_le TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    statut VARCHAR(20) DEFAULT 'en_attente',
-    traitee_par INT REFERENCES users(id),
-    traitee_le TIMESTAMP,
-    commentaires TEXT
-);
 
 DROP INDEX idx_dossier_instance;
 DROP INDEX idx_dossier_statut;     

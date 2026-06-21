@@ -15,21 +15,11 @@ import {
   FileText,
   Award,
   Loader2,
-  ArrowRight
+  ArrowRight,
+  Clipboard
 } from 'lucide-react'
 import { getMyStats, getMyTasks } from '@/lib/api'
-
-interface Task {
-  id: string
-  titre: string
-  statut: 'en_attente' | 'en_cours' | 'termine' | 'annule'
-  priorite: 'basse' | 'moyenne' | 'haute' | 'critique'
-  avancement: number
-  date_echeance: string
-  dossier_reference: string
-  dossier_titre: string
-}
-
+import { Tache } from '@/types'
 interface DashboardStats {
   totalTasks: number
   completedTasks: number
@@ -43,7 +33,7 @@ interface DashboardStats {
 export default function Dashboard() {
   const { user } = useAuth()
   const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [tasks, setTasks] = useState<Task[]>([])
+  const [tasks, setTasks] = useState<Tache[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -131,7 +121,7 @@ export default function Dashboard() {
 
   const urgentTasks = tasks.filter(task => {
     if (task.statut === 'termine' || task.statut === 'annule') return false
-    const dueDate = new Date(task.date_echeance)
+    const dueDate = new Date(task.date_fin)
     const today = new Date()
     const diffTime = dueDate.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
@@ -250,7 +240,7 @@ export default function Dashboard() {
                               <h3 className={`font-medium text-gray-900 ${
                                 task.statut === 'termine' ? 'line-through text-gray-400' : ''
                               }`}>
-                                {task.titre}
+                                {task.libelle}
                               </h3>
                               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(task.statut)}`}>
                                 {getStatusLabel(task.statut)}
@@ -264,22 +254,8 @@ export default function Dashboard() {
                             </div>
                             <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500 flex-wrap">
                               <span className="flex items-center gap-1">
-                                <FileText className="w-3 h-3" />
-                                {task.dossier_reference}
+                                Échéance: {new Date(task.date_fin).toLocaleDateString()}
                               </span>
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                Échéance: {new Date(task.date_echeance).toLocaleDateString()}
-                              </span>
-                              <div className="flex items-center gap-1">
-                                <span className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                  <div 
-                                    className="h-full bg-primary rounded-full transition-all"
-                                    style={{ width: `${task.avancement || 0}%` }}
-                                  />
-                                </span>
-                                <span>{task.avancement || 0}%</span>
-                              </div>
                             </div>
                           </div>
                           <div className="shrink-0">

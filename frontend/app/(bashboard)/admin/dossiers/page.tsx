@@ -116,7 +116,7 @@ export default function DossiersPage() {
       boucle: 'bg-green-100 text-green-800',
       en_retard: 'bg-red-100 text-red-800'
     }
-    return colors[statut] || colors['en_cours']
+    return colors[statut as keyof typeof colors] || colors['en_cours']
   }
 
   const onSuccess=(dossier: Dossier)=> {
@@ -219,19 +219,26 @@ export default function DossiersPage() {
                           <span className="text-gray-600">{dossier.total_tache}</span>
                         </div>
                       </td>
+                      {(()=>{
+                        const total = dossier.total_tache || 0;
+                        const finished = dossier.taches_terminees || 0;
+                        const percentage = total > 0 ? (finished / total) * 100 : 0;
+
+                      return(
                       <td className="px-6 py-4 hidden md:table-cell">
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                             <div 
-                              className="h-full bg-primary rounded-full transition-all"
-                              style={{ width: `${dossier.taux_achevement}%` }}
+                              className="h-full bg-green-600  transition-all"
+                              style={{ width: `${percentage}%` }}
                             />
                           </div>
                           <span className="text-xs font-medium text-gray-600">
-                            {dossier.taux_achevement}%
+                            {Math.round(percentage)}%
                           </span>
                         </div>
-                      </td>
+                      </td>);
+                    })()}
                       <td className="px-6 py-4 text-gray-600 text-xs hidden xl:table-cell">
                         {new Date(dossier.date_limite).toLocaleDateString()}
                       </td>

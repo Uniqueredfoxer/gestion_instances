@@ -2,7 +2,7 @@ import db from '../database/db.js';
 
 export const TacheService = {
     async createTask(taskData, dossierId, userId, userRole) {
-        const { libelle, date_debut, date_fin_prevue, intervenants = [] } = taskData;
+        const { libelle, date_fin, intervenants = [] } = taskData;
         const dossierCheck = await db.query(
             `SELECT cree_par FROM dossiers WHERE id = $1`,
             [dossierId]
@@ -17,14 +17,14 @@ export const TacheService = {
         }
         
         
-        const id_intervenant = intervenants.length > 0 ? intervenants[0].utilisateur_id : null;
-        if (!id_intervenant) throw new Error("Un intervenant est requis");
+        const id_responsable = intervenants.length > 0 ? intervenants[0].utilisateur_id : null;
+        if (!id_responsable) throw new Error("Un intervenant est requis");
 
         const taskResult = await db.query(
-            `INSERT INTO taches (libelle, date_debut, date_fin_prevue, id_dossier, cree_par, id_intervenant)
+            `INSERT INTO taches (libelle, date_fin, id_dossier, cree_par, id_responsable)
              VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING *`,
-            [libelle, date_debut, date_fin_prevue, dossierId, userId, id_intervenant]
+            [libelle, date_fin, dossierId, userId, id_responsable]
         );
         
         const task = taskResult.rows[0];
@@ -34,21 +34,9 @@ export const TacheService = {
     
     async getTasksByDossier(dossierId, userId, userRole) {
         const query = `
-            SELECT t.*,
-                   jsonb_build_array(jsonb_build_object(
-                       'id', u.id,
-                       'nom', u.nom,
-                       'prenom', u.prenom,
-                       'role', 'Intervenant'
-                   )) as intervenants,
-                   CASE 
-                       WHEN t.demande_validation_le IS NOT NULL AND t.valide_le IS NULL 
-                       THEN 'en_attente_validation'
-                       WHEN t.valide_le IS NOT NULL THEN 'validee'
-                       ELSE 'active'
-                   END as statut_validation
+            SELECT t.*, CONCAT(u.nom, ' ', u.prenom) as responsable
             FROM taches t
-            LEFT JOIN users u ON t.id_intervenant = u.id
+            LEFT JOIN users u ON t.id_responsable = u.id
             WHERE t.id_dossier = $1
             ORDER BY t.date_creation DESC
         `;
@@ -57,40 +45,11 @@ export const TacheService = {
         return result.rows;
     },
     
-
-    async updateProgress(taskId, avancement, userId) {
-        const assignmentCheck = await db.query(
-            `SELECT * FROM taches 
-             WHERE id = $1 AND id_intervenant = $2`,
-            [taskId, userId]
-        );
-        
-        if (assignmentCheck.rows.length === 0) {
-            throw new Error("Vous n'êtes pas assigné à cette tâche");
-        }
-        
-
-        const result = await db.query(
-            `UPDATE taches 
-             SET avancement = $1,
-                 statut = CASE 
-                     WHEN $1 = 100 THEN 'termine'
-                     WHEN $1 > 0 AND $1 < 100 THEN 'en_cours'
-                     ELSE 'a_faire'
-                 END
-             WHERE id = $2
-             RETURNING *`,
-            [avancement, taskId]
-        );
-        
-        return result.rows[0];
-    },
-    
   
     async requestCompletion(taskId, userId) {
         const assignmentCheck = await db.query(
             `SELECT * FROM taches 
-             WHERE id = $1 AND id_intervenant = $2`,
+             WHERE id = $1 AND id_responsable = $2`,
             [taskId, userId]
         );
         
@@ -108,7 +67,6 @@ export const TacheService = {
             throw new Error("Une demande de validation est déjà en attente");
         }
         
-        // Créer la demande de validation
         const result = await db.query(
             `INSERT INTO demandes_validation (id_tache, demandee_par)
              VALUES ($1, $2)
@@ -154,7 +112,6 @@ export const TacheService = {
         );
         
         if (approuve) {
-            // Marquer la tâche comme terminée
             const result = await db.query(
                 `UPDATE taches 
                  SET statut = 'termine', 
@@ -193,10 +150,8 @@ export const TacheService = {
         
         const task = taskCheck.rows[0];
         
-        const isAssignedIntervenant = task.id_intervenant === userId;
+        const isAssignedIntervenant = task.id_responsable === userId;
         const isPrivileged = ['admin', 'directeur'].includes(userRole) || task.cree_par === userId;
-
-        // Intervenants can only update the statut of their own tasks
         if (!isPrivileged && isAssignedIntervenant) {
             const allowedForIntervenant = ['statut'];
             const setClauses = [];
@@ -226,7 +181,7 @@ export const TacheService = {
             throw new Error("Seul le créateur du dossier peut modifier cette tâche");
         }
         
-        const allowedUpdates = ['libelle', 'description', 'date_debut', 'date_fin_prevue', 'statut', 'id_intervenant'];
+        const allowedUpdates = ['libelle', 'description', 'date_fin', 'statut', 'id_responsable'];
         const setClauses = [];
         const params = [];
         let paramCounter = 1;
@@ -255,16 +210,11 @@ export const TacheService = {
     
     async getMyTasks(userId) {
         const result = await db.query(
-            `SELECT t.*, d.titre as titre_dossier, d.id as id_dossier,
-                    CASE 
-                        WHEN t.demande_validation_le IS NOT NULL AND t.valide_le IS NULL 
-                        THEN 'en_attente_validation'
-                        ELSE 'active'
-                    END as statut_validation
+            `SELECT t.*, d.titre as titre_dossier, d.id as id_dossier
              FROM taches t
              JOIN dossiers d ON t.id_dossier = d.id
-             WHERE t.id_intervenant = $1
-             ORDER BY t.date_fin_prevue ASC NULLS LAST`,
+             WHERE t.id_responsable = $1
+             ORDER BY t.date_fin ASC NULLS LAST`,
             [userId]
         );
         
@@ -280,25 +230,24 @@ export const TacheService = {
             COUNT(CASE WHEN statut = 'a_faire' THEN 1 END) as taches_a_faire,
             COUNT(CASE 
                 WHEN statut != 'termine' 
-                AND date_fin_prevue < CURRENT_DATE 
+                AND date_fin < CURRENT_DATE 
                 THEN 1 
             END) as taches_en_retard,
             COUNT(CASE 
                 WHEN statut != 'termine' 
-                AND date_fin_prevue BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '3 days' 
+                AND date_fin BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '3 days' 
                 THEN 1 
             END) as taches_urgentes,
-            COALESCE(ROUND(AVG(CASE WHEN statut = 'termine' THEN 100 ELSE avancement END), 2), 0) as avancement_moyen,
             COALESCE(ROUND(
                 COUNT(CASE WHEN statut = 'termine' THEN 1 END)::numeric / 
                 NULLIF(COUNT(*), 0) * 100, 2
             ), 0) as taux_achevement,
             COALESCE(ROUND(
-                COUNT(CASE WHEN statut = 'termine' AND date_fin_prevue >= CURRENT_DATE THEN 1 END)::numeric / 
+                COUNT(CASE WHEN statut = 'termine' AND date_fin >= CURRENT_DATE THEN 1 END)::numeric / 
                 NULLIF(COUNT(CASE WHEN statut = 'termine' THEN 1 END), 0) * 100, 2
             ), 0) as taux_ponctualite
         FROM taches
-        WHERE id_intervenant = $1
+        WHERE id_responsable = $1
     `;
 
     const result = await db.query(query, [userId]);

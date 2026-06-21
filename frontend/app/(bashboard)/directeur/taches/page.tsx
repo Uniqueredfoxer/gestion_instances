@@ -149,6 +149,7 @@ export default function MesTaches() {
     return labels[status as keyof typeof labels] || status;
   };
 
+
   const pendingCount = mesTaches.filter(t => t.statut !== 'termine').length;
   const completedCount = mesTaches.filter(t => t.statut === 'termine').length;
 
