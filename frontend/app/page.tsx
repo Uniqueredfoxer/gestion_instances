@@ -6,28 +6,29 @@ import { CheckCircle, XCircle } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import type { User } from "@/types";
 import { login } from "@/lib/api";
+
 export default function LandingPage() {
   const [showLogin, setShowLogin] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     mdp: ''
-  })
-  const router = useRouter()
+  });
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [user, setUser] = useState<User | null>(null);
-  const {user: authedUser} = useAuth()
-  useEffect(()=>{
-    const checkAuthState = async ()=>{
-      if(authedUser){
+  const [, setUser] = useState<User | null>(null);
+  const { user: authedUser } = useAuth();
+
+  useEffect(() => {
+    const checkAuthState = async () => {
+      if (authedUser && authedUser.role_dir) {
         setUser(authedUser);
-        setTimeout(()=> router.push(`/${authedUser?.role_dir}` || '/'), 1000)
+        setTimeout(() => router.push(`/${authedUser.role_dir}`), 1000);
       }
-    }
-    checkAuthState()
-  }, [authedUser])
-  
+    };
+    checkAuthState();
+  }, [authedUser, router]);
   
   const handleSubmit: SubmitEventHandler = async (e) => {
     e.preventDefault();
@@ -43,22 +44,27 @@ export default function LandingPage() {
       return;
     }
 
-  try {
-    console.log(email, mdp);
-    const response = await login(email, mdp)   
-    if (!response.success) {
+    try {
+      console.log(email, mdp);
+      const response = await login(email, mdp);   
+      
+      if (!response.success) {
         setError(response.error ?? "Échec de la connexion.");
         setIsLoading(false);
         return;
       }
-      const {token, data:user} = response
-      localStorage.setItem('token', token)
-      localStorage.setItem('user', JSON.stringify(user))
-      setUser(user);
-      console.log(response)
-      setSuccessMessage(`Bienvenue ${user?.prenom || ''} ! Redirection en cours...`);
-      if (user) {
-          router.push(user.role_dir);
+
+      const { token, data: apiUser } = response;
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(apiUser));
+      setUser(apiUser);
+      
+      console.log(response);
+      setSuccessMessage(`Bienvenue ${apiUser?.prenom || ''} ! Redirection en cours...`);
+      
+      if (apiUser && apiUser.role_dir) {
+        router.push(`/${apiUser.role_dir}`);
       }
 
     } catch (err) {
@@ -68,31 +74,30 @@ export default function LandingPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (error) setError('');
     if (successMessage) setSuccessMessage('');
-  }
+  };
 
   const handleCloseModal = () => {
+    if (isLoading) return;
     setShowLogin(false);
     setError('');
     setSuccessMessage('');
     setFormData({ email: '', mdp: '' });
-  }
+  };
 
   return (
     <div className="relative min-h-screen text-white">
-
       <link
         rel="preload"
         as="image"
         href="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920&q=75&fm=webp&fit=crop"
       />
-
 
       <div
         className="absolute inset-0 bg-cover bg-center"
@@ -103,7 +108,6 @@ export default function LandingPage() {
       />
 
       <div className="absolute inset-0 bg-black/60" />
-
 
       <div className="relative flex min-h-screen flex-col items-center justify-center text-center px-6">
         <h1 className="text-4xl font-bold tracking-tight">
@@ -134,10 +138,9 @@ export default function LandingPage() {
             <h2 className="text-xl font-semibold text-center">
               Connexion
             </h2>
-
         
             {successMessage && (
-              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 animate-fade-in">
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
                 <p className="text-sm text-green-700 font-medium">{successMessage}</p>
               </div>
