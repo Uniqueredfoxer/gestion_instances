@@ -301,7 +301,7 @@ export default function DossiersPage() {
                                       <div>
                                         <div className="font-medium text-gray-800">{tache.libelle}</div>
                                         <div className="text-xs text-gray-500 mt-1 flex gap-3">
-                                          <span>Échéance: {tache.date_fin_prevue ? new Date(tache.date_fin_prevue).toLocaleDateString() : 'N/A'}</span>
+                                          <span>Échéance: {tache.date_fin ? new Date(tache.date_fin).toLocaleDateString() : 'N/A'}</span>
                                           <span className="capitalize border-l pl-3 border-gray-300">Statut: {tache.statut.replace('_', ' ')}</span>
                                           <span className="border-l pl-3 border-gray-300">Avancement: {tache.avancement}%</span>
                                         </div>
