@@ -14,7 +14,7 @@ interface DossierFormModalProps {
   onSuccess: (dossier: Dossier) => void
   dossierToEdit?: Dossier | null
   user: User | null | undefined
-  users: Array<User>
+  users: Array<User> | undefined
 }
 
 export default function DossierFormModal({ 

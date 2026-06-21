@@ -97,7 +97,9 @@ export default function OverviewPage() {
     },
     {
       title: 'Taux de MEO global',
-      value: `${stats.total_dossiers > 0? (stats.dossiers_termines/stats.total_dossiers)*100: 0}%`,
+      value: `${(stats?.total_dossiers || 0) > 0 
+              ? Math.round(((stats?.dossiers_termines || 0) / (stats?.total_dossiers || 1)) * 100) 
+              : 0}%`,
       icon: TrendingUp,
       color: 'success'
     },
