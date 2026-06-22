@@ -164,14 +164,8 @@ export default function OverviewPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-gray-700">
-            <button className="w-full text-left px-4 py-2 border border-gray-300 hover:bg-gray-100 rounded-lg transition-colors text-sm" onClick={openDossierModal}>
-              Ajouter un Dossier
-            </button>
-            <button className="w-full text-left px-4 py-2 border border-gray-300 hover:bg-gray-100 rounded-lg transition-colors text-sm" onClick={openUserModal}>
+            <button className="w-full text-left px-4 py-2 border border-gray-300 hover:bg-primary-100 rounded-lg transition-colors text-sm" onClick={openUserModal}>
               Ajouter un Utilisateur
-            </button>
-            <button className="w-full text-left px-4 py-2 border border-gray-300 hover:bg-gray-100 rounded-lg transition-colors text-sm">
-              Voir les rapports
             </button>
           </CardContent>
         </Card>

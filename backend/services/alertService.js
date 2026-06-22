@@ -135,7 +135,7 @@ export const AlertService = {
           ' est due le ', TO_CHAR(t.date_fin, 'DD/MM/YYYY')
         ) as message,
         t.id_dossier as id_dossier,
-        t.id_tache as id_tache
+        t.id as id_tache
       FROM taches t
       JOIN dossiers d ON t.id_dossier = d.id
       LEFT JOIN alertes a ON (
