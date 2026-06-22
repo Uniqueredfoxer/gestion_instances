@@ -130,7 +130,7 @@ export default function TacheFormModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+    <div className="fixed inset-0 z-60 flex items-center justify-center">
       <div 
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
@@ -218,29 +218,6 @@ export default function TacheFormModal({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="date_debut" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Date de début <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  id="date_debut"
-                  name="date_debut"
-                  type="date"
-                  value={formData.date_debut}
-                  onChange={handleChange}
-                  className={`w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none ${
-                    errors.date_debut ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'
-                  }`}
-                  disabled={loading}
-                />
-                <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"/>
-              </div>
-              {errors.date_debut && (
-                <p className="mt-1 text-sm text-red-500">{errors.date_debut}</p>
-              )}
-            </div>
-
             <div>
               <label htmlFor="date_fin" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Date de fin prévue <span className="text-red-500">*</span>
