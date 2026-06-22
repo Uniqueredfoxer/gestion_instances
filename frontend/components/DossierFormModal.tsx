@@ -267,7 +267,6 @@ export default function DossierFormModal({
                   }`}
                   disabled={loading}
                 />
-                <Calendar className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-black"/>
               </div>
               {errors.date_limite && (
                 <p className="mt-1 text-sm text-red-500">{errors.date_echeance}</p>

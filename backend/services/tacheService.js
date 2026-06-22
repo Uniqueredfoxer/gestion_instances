@@ -22,7 +22,7 @@ export const TacheService = {
 
         const taskResult = await db.query(
             `INSERT INTO taches (libelle, date_fin, id_dossier, cree_par, id_responsable)
-             VALUES ($1, $2, $3, $4, $5, $6)
+             VALUES ($1, $2, $3, $4, $5)
              RETURNING *`,
             [libelle, date_fin, dossierId, userId, id_responsable]
         );
