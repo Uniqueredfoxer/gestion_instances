@@ -155,28 +155,30 @@ export default function LandingPage() {
                 required
               />
 
-              <input
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-600"
-                placeholder="Mot de passe"
-                type={showPassword? "text": "password"}
-                name="mdp"
-                value={formData.mdp}
-                onChange={handleInputChange}
-                disabled={isLoading || !!successMessage}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                disabled={isLoading}
-                >
-                {showPassword ? (
-                <EyeOff className="w-4 h-4" />
-                ) : (
-                <Eye className="w-4 h-4" />
-                 )}
-                </button>
+              <div className="relative w-full">
+    <input
+      className="w-full rounded-lg border border-gray-300 pl-3 pr-10 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-600"
+      placeholder="Mot de passe"
+      type={showPassword ? "text" : "password"}
+      name="mdp"
+      value={formData.mdp}
+      onChange={handleInputChange}
+      disabled={isLoading || !!successMessage}
+      required
+    />
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"
+      disabled={isLoading}
+    >
+      {showPassword ? (
+        <EyeOff className="w-5 h-5" />
+      ) : (
+        <Eye className="w-5 h-5" />
+      )}
+    </button>
+  </div>
               <button
                 type="submit"
                 disabled={isLoading || !!successMessage}
