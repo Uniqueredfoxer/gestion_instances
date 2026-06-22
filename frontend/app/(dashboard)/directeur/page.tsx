@@ -87,8 +87,7 @@ export default function DirecteurOverviewPage() {
           Bienvenue dans votre espace directeur. Voici l&apos;état d&apos;avancement des dossiers.
         </p>
       </div>
-
-      {/* KPI Cards */}
+      
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-900">
         {kpis.map((kpi, index) => (
           <StatCard

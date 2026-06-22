@@ -11,7 +11,9 @@ import {
   Briefcase,
   Shield,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 
 
@@ -23,7 +25,7 @@ export default function UserFormModal({
 }: { 
   isOpen: boolean
   onClose?: () => void
-  onSuccess: (user: User) => void //add the new user immediately to the list
+  onSuccess: (user: User) => void
   userToEdit?: User | null
 }) {
   const [formData, setFormData] = useState({
@@ -38,6 +40,7 @@ export default function UserFormModal({
   const [errors, setErrors] = useState< Record<string, string > >({})
   const [successMessage, setSuccessMessage] = useState('')
   const [passwordError, setPasswordError] = useState('')
+  const [showPassword, setShowPassword] = useState(false); 
   const resetForm = () => {
     setFormData({
       nom: '',
@@ -277,24 +280,36 @@ export default function UserFormModal({
                 Mot De Passe {userToEdit ? <span className="text-gray-400 text-xs">(Optionnel pour modifier)</span> : <span className="text-red-500">*</span>}
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  id="mdp"
-                  name="mdp"
-                  type="password"
-                  value={formData.mdp}
-                  onChange={handlePasswordInputChange}
-                  placeholder="********"
-                  className={`w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none ${
-                    passwordError ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'
-                  }`}
-                  disabled={loading}
-                />
-              </div>
-              {passwordError && (
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                id="mdp"
+                name="mdp"
+                type={showPassword ? "text" : "password"}
+                value={formData.mdp}
+                onChange={handlePasswordInputChange}
+                placeholder="********"
+                className={`w-full pl-9 pr-12 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none ${  // Changed pr-4 to pr-12
+                passwordError ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'
+                }`}
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                disabled={loading}
+                >
+                {showPassword ? (
+                <EyeOff className="w-4 h-4" />
+                ) : (
+                <Eye className="w-4 h-4" />
+                 )}
+                </button>
+                </div>
+                {passwordError && (
                 <p className="mt-1 text-sm text-red-500">{passwordError}</p>
-              )}
-            </div>
+                )}
+                </div>
 
             <div>
               <label htmlFor="poste" className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -330,8 +345,7 @@ export default function UserFormModal({
                   disabled={loading}
                 >
                   <option value="intervenant">Intervenant</option>
-                  <option value="manager">Manager</option>
-                  <option value="directeur">Directeur</option>
+                  <option value="directeur/trice">Directeur</option>
                   <option value="admin">Administrateur</option>
                 </select>
               </div>

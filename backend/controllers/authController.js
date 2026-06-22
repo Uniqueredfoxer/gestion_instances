@@ -26,12 +26,12 @@ export const loginUser = async (req, res) => {
     const result = await AuthService.login(req.body);
     
     if (!result.success) {
-        if (result.error === "Email and password required" ||
-            result.error === "Invalid email format" ||
-            result.error === "Password cannot be empty") {
+        if (result.error === "email et mot de passe requis" ||
+            result.error === "format d'email invalide" ||
+            result.error === "le mot de passe ne peut pas etre vide") {
             return res.status(400).json(result);
         }
-        if (result.error === "Invalid credentials") {
+        if (result.error === "email ou mot de passe incorrect") {
             return res.status(401).json(result);
         }
         return res.status(500).json(result);

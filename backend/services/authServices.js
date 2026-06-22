@@ -63,15 +63,15 @@ const AuthService = {
         const { email, mdp } = userData;
 
         if (!email || !mdp) {
-            return { success: false, error: "Email and password required" };
+            return { success: false, error: "email et mot de passe requis" };
         }
 
         if (!validateEmail(email)) {
-            return { success: false, error: "Invalid email format" };
+            return { success: false, error: "format d'email invalide" };
         }
 
         if (mdp.length === 0) {
-            return { success: false, error: "Password cannot be empty" };
+            return { success: false, error: "le mot de passe ne peut pas etre vide" };
         }
             
         try {
@@ -81,14 +81,14 @@ const AuthService = {
                 );
                 
             if (result.rows.length === 0) {
-                return { success: false, error: "User not found" };
+                return { success: false, error: "Cet utilisateur n'existe pas" };
             }
                 
             const user = result.rows[0];
             const passwdMatch = await bcrypt.compare(mdp, user.mdp);
                 
             if (!passwdMatch) {
-                return { success: false, error: "Invalid credentials" };
+                return { success: false, error: "email ou mot de passe incorrect" };
             }
             console.log(`using ${JWT_SECRET} to sign the payload`)
             const token = jwt.sign({id: user.id, email: user.email, role: user.role_dir}, JWT_SECRET, {expiresIn: JWT_EXPIRE_IN})

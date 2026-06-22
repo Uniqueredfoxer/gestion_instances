@@ -25,9 +25,8 @@ export default function TacheFormModal({
 }: TacheFormModalProps) {
   const [formData, setFormData] = useState({
     libelle: '',
-    date_debut: '',
-    date_fin_prevue: '',
-    id_intervenant: 0 
+    date_fin: '',
+    id_responsable: 0 
   })
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -36,9 +35,8 @@ export default function TacheFormModal({
   const resetForm = () => {
     setFormData({
       libelle: '',
-      date_debut: '',
-      date_fin_prevue: '',
-      id_intervenant: 0
+      date_fin: '',
+      id_responsable: 0
     })
     setErrors({})
     setSuccessMessage('')
@@ -57,20 +55,13 @@ export default function TacheFormModal({
       newErrors.libelle = 'Le libellé est requis'
     }
 
-    if (!formData.id_intervenant || formData.id_intervenant === 0) {
-      newErrors.id_intervenant = 'Veuillez sélectionner un intervenant'
+    if (!formData.id_responsable || formData.id_responsable === 0) {
+      newErrors.id_responsable = 'Veuillez sélectionner un intervenant'
     }
 
-    if (!formData.date_debut) {
-      newErrors.date_debut = "La date de début est requise"
-    }
     
-    if (!formData.date_fin_prevue) {
-      newErrors.date_fin_prevue = "La date de fin est requise"
-    } else if (formData.date_debut && formData.date_fin_prevue) {
-      if (new Date(formData.date_fin_prevue) < new Date(formData.date_debut)) {
-        newErrors.date_fin_prevue = "La date de fin doit être après la date de début"
-      }
+    if (!formData.date_fin) {
+      newErrors.date_fin = "La date de fin est requise"
     }
 
     setErrors(newErrors)
@@ -91,11 +82,10 @@ export default function TacheFormModal({
     try {
       const payload = {
         libelle: formData.libelle,
-        date_debut: formData.date_debut,
-        date_fin_prevue: formData.date_fin_prevue,
+        date_fin: formData.date_fin,
         intervenants: [
           {
-            utilisateur_id: formData.id_intervenant,
+            utilisateur_id: formData.id_responsable,
             role: "Intervenant"
           }
         ]
@@ -127,7 +117,7 @@ export default function TacheFormModal({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     
-    if (name === 'id_intervenant') {
+    if (name === 'id_responsable') {
       setFormData(prev => ({ ...prev, [name]: parseInt(value) || 0 }))
     } else {
       setFormData(prev => ({ ...prev, [name]: value }))
@@ -198,18 +188,18 @@ export default function TacheFormModal({
           </div>
 
           <div>
-            <label htmlFor="id_intervenant" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="id_responsable" className="block text-sm font-medium text-gray-700 mb-1.5">
               Intervenant <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <User2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <select
-                id="id_intervenant"
-                name="id_intervenant"
-                value={formData.id_intervenant}
+                id="id_responsable"
+                name="id_responsable"
+                value={formData.id_responsable}
                 onChange={handleChange}
                 className={`w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none ${
-                  errors.id_intervenant ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'
+                  errors.id_responsable ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'
                 }`}
                 disabled={loading}
               >
@@ -222,8 +212,8 @@ export default function TacheFormModal({
                 ))}
               </select>
             </div>
-            {errors.id_intervenant && (
-              <p className="mt-1 text-sm text-red-500">{errors.id_intervenant}</p>
+            {errors.id_responsable && (
+              <p className="mt-1 text-sm text-red-500">{errors.id_responsable}</p>
             )}
           </div>
 
@@ -252,25 +242,25 @@ export default function TacheFormModal({
             </div>
 
             <div>
-              <label htmlFor="date_fin_prevue" className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="date_fin" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Date de fin prévue <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
-                  id="date_fin_prevue"
-                  name="date_fin_prevue"
+                  id="date_fin"
+                  name="date_fin"
                   type="date"
-                  value={formData.date_fin_prevue}
+                  value={formData.date_fin}
                   onChange={handleChange}
                   className={`w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none ${
-                    errors.date_fin_prevue ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'
+                    errors.date_fin ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'
                   }`}
                   disabled={loading}
                 />
                 <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"/>
               </div>
-              {errors.date_fin_prevue && (
-                <p className="mt-1 text-sm text-red-500">{errors.date_fin_prevue}</p>
+              {errors.date_fin && (
+                <p className="mt-1 text-sm text-red-500">{errors.date_fin}</p>
               )}
             </div>
           </div>

@@ -2,7 +2,7 @@
 
 import { SubmitEventHandler, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 
 export default function LandingPage() {
@@ -14,6 +14,7 @@ export default function LandingPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const { user: authedUser, login: handleContextLogin } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     setIsMounted(true);
@@ -157,14 +158,25 @@ export default function LandingPage() {
               <input
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-600"
                 placeholder="Mot de passe"
-                type="password"
+                type={showPassword? "text": "password"}
                 name="mdp"
                 value={formData.mdp}
                 onChange={handleInputChange}
                 disabled={isLoading || !!successMessage}
                 required
               />
-
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                disabled={isLoading}
+                >
+                {showPassword ? (
+                <EyeOff className="w-4 h-4" />
+                ) : (
+                <Eye className="w-4 h-4" />
+                 )}
+                </button>
               <button
                 type="submit"
                 disabled={isLoading || !!successMessage}

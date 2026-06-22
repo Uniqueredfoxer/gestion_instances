@@ -136,12 +136,11 @@ export const UserService = {
     async deleteUser(userId) {
 
         const taskCheck = await db.query(
-            `SELECT COUNT(*) FROM taches WHERE id_intervenant = $1`,
+            `SELECT COUNT(*) FROM taches WHERE id_responsable = $1`,
             [userId]
         );
         
         if (parseInt(taskCheck.rows[0].count) > 0) {
-            // Au lieu de supprimer, désactiver
             const result = await db.query(
                 `UPDATE users SET statut = 'inactif' WHERE id = $1 RETURNING id`,
                 [userId]

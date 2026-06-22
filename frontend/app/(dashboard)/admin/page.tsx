@@ -128,7 +128,7 @@ export default function OverviewPage() {
         </p>
       </div>
 
-      {/* KPI Cards */}
+  
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-gray-900">
         {kpis.map((kpi, index) => (
           <StatCard
@@ -141,7 +141,7 @@ export default function OverviewPage() {
         ))}
       </div>
 
-      {/*  Activites Recentes*/}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 text-gray-200 bg-card">
           <CardHeader>
