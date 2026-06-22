@@ -21,7 +21,7 @@ import { useAuth } from '@/app/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
-import type { User } from '@/types'
+
 
 interface SidebarProps {
   collapsed: boolean
@@ -43,7 +43,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const navigation = {
     admin: [
       { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-      { name: 'Dossiers', href: '/admin/dossiers', icon: FolderKanban },
       { name: 'Utilisateurs', href: '/admin/utilisateurs', icon: Users },
       { name: 'Alertes', href: '/admin/alerts', icon: AlertCircle }
     ],
