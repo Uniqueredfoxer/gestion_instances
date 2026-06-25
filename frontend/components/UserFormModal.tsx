@@ -177,7 +177,7 @@ export default function UserFormModal({
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-xl font-bold text-gray-900">
-            Ajouter un utilisateur
+            { userToEdit? "Modifier l'utilisateur": 'Ajouter un utilisateur'}
           </h2>
           <button
             onClick={onClose}
