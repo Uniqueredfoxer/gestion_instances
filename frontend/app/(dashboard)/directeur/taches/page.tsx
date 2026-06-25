@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react";
-import { getMyTasks, updateTask } from "@/lib/api";
+import { getMyTasks, updateTask, deleteTask} from "@/lib/api";
 import { Tache } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -15,7 +15,9 @@ import {
   Calendar,
   FolderKanban,
   Check,
-  Loader2
+  Loader2,
+  Trash2,
+  Edit
 } from "lucide-react";
 
 
@@ -129,6 +131,12 @@ export default function MesTaches() {
     }
   };
 
+  const handleEdit = async () => {
+
+  }
+  const handleDelete = async () => {
+
+  }
   const getStatusBadge = (status: string) => {
     const badges = {
       'en_attente': 'bg-yellow-100 text-yellow-800',
@@ -406,6 +414,14 @@ export default function MesTaches() {
                       </div>
                     </div>
                   )}
+                  <div>
+                    <button className="w-4 h-4" onClick={handleEdit}>
+                      <Edit className="w-4 h-4"/>
+                    </button>
+                    <button>
+                      <Trash2 className="w-4 h-4" onClick={handleDelete}/>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

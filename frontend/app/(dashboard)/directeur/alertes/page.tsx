@@ -6,6 +6,8 @@ import type { Alert } from '@/types'
 import { 
   Bell, 
   RefreshCw,
+  Inbox,
+  CheckCheck
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'

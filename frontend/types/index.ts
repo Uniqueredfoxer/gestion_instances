@@ -38,7 +38,7 @@ export interface Tache {
   avancement: number;
   statut: 'a_faire' | 'en_cours' | 'termine';
   id_dossier: number;
-  id_intervenant: number;
+  id_responsable: number;
   titre_dossier?: string;
   intervenant?: string;
   statut_validation?: 'active' | 'en_attente_validation' | 'validee';

@@ -3,35 +3,39 @@
 import { useState, useEffect, SubmitEventHandler } from 'react'
 import { X, CheckCircle, AlertCircle, User2, AlignLeft } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import type { User } from '@/types'
-import { createTask } from '@/lib/api'
+import { updateTask } from '@/lib/api'
+import { Tache, User } from '@/types'
 
-interface TacheFormModalProps {
+interface TacheEditModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
+  tacheToEdit: Tache
   dossierId: number | null
-  users: Array<User>
-  user: User | null | undefined
+  users: User[]
+  user: User | null
 }
 
-export default function TacheFormModal({ 
+export default function TacheEditModal({ 
   isOpen, 
   onClose, 
-  onSuccess,
+  onSuccess, 
+  tacheToEdit,
   dossierId,
-  users = [],
+  users,
   user
-}: TacheFormModalProps) {
-  const [formData, setFormData] = useState({
-    libelle: '',
-    date_fin: '',
-    id_responsable: 0 
+}: TacheEditModalProps) {
+  const [formData, setFormData] = useState<{libelle: string, date_fin: string, id_responsable: number}>({
+    libelle: tacheToEdit.libelle,
+    date_fin: tacheToEdit.date_fin?.split('T')[0],
+    id_responsable: tacheToEdit.id_responsable 
   })
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [successMessage, setSuccessMessage] = useState('')
   const [filteredUser, setFilteredUsers] = useState<User[]>([])
+
+
   const resetForm = () => {
     setFormData({
       libelle: '',
@@ -41,9 +45,10 @@ export default function TacheFormModal({
     setErrors({})
     setSuccessMessage('')
   }
-  
+
   useEffect(() => {
     setFilteredUsers(users.filter(u=> u.id !==user?.id && u.role_dir !== 'admin'))
+
     if (!isOpen) {
       resetForm()
     }
@@ -72,33 +77,28 @@ export default function TacheFormModal({
   const handleSubmit: SubmitEventHandler = async (e) => {
     e.preventDefault()
     
-    if (!validateForm() || !dossierId) {
+    if (!validateForm()) {
       return
     }
 
     setLoading(true)
     setSuccessMessage('')
     setErrors({})
-
+    
     try {
       const payload = {
         libelle: formData.libelle,
         date_fin: formData.date_fin,
-        intervenants: [
-          {
-            utilisateur_id: formData.id_responsable,
-            role: "Intervenant"
-          }
-        ]
-      }
-      
-      const response = await createTask(dossierId, payload)
+        id_responsable: formData.id_responsable      }
+      console.log('📦 Payload envoyé:', payload)
+  console.log('🔍 Clés du payload:', Object.keys(payload))
+      const response = await updateTask(tacheToEdit.id, payload)
 
       if (!response.success) {
         throw new Error(response.error || 'Une erreur est survenue lors de la création de la tâche')
       }
 
-      setSuccessMessage('Tâche créée avec succès !')
+      setSuccessMessage('Tâche modifié avec succès !')
       
       onSuccess()
       
@@ -141,7 +141,7 @@ export default function TacheFormModal({
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <AlignLeft className="w-5 h-5 text-primary" />
-            Ajouter une tâche
+            Modifier une tâche
           </h2>
           <button
             onClick={onClose}
@@ -169,7 +169,7 @@ export default function TacheFormModal({
 
           <div>
             <label htmlFor="libelle" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Libellé de la tâche <span className="text-red-500">*</span>
+              Libellé <span className="text-red-500">*</span>
             </label>
             <input
               id="libelle"
@@ -204,7 +204,6 @@ export default function TacheFormModal({
                 }`}
                 disabled={loading}
               >
-                <option value={0}>Sélectionner un intervenant</option>
                 <option value={user?.id}>Moi-même</option>
                 {filteredUser.map((u) => (
                   <option key={u.id} value={u.id}>
@@ -261,10 +260,10 @@ export default function TacheFormModal({
               {loading ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2 inline-block" />
-                  Création...
+                  Modification...
                 </>
               ) : (
-                'Créer la tâche'
+                'Modifier'
               )}
             </Button>
           </div>

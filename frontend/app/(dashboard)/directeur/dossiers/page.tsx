@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
-import { deleteDossier, getAllDossiers, getTasks } from '@/lib/api'
+import { deleteDossier, deleteTask, getAllDossiers, getTasks, updateTask } from '@/lib/api'
 import DossierFormModal from '@/components/DossierFormModal'
 import TacheFormModal from '@/components/TacheFormModal'
+import TacheEditModal from '@/components/TacheEditForm'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import type { Dossier, User, Tache } from '@/types'
 import { useAuth } from '@/app/hooks/useAuth'
@@ -17,9 +18,7 @@ import {
   Eye, 
   Edit, 
   Trash2,
-} from 'lucide-react';
-
-
+} from 'lucide-react'
 
 export default function DossiersPage() {
   const [dossiers, setDossiers] = useState<Dossier[]>([])
@@ -27,15 +26,18 @@ export default function DossiersPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
-  const [modal, setModal] = useState<{type: 'create' | 'edit' | null, dossier?: Dossier | null, user?: | User | null }>({type: null})
-  const [editSuccess, setEditSuccess] = useState('')
-  const [expandedDossierId, setExpandedDossierId] = useState<number | null>(null);
-  const [dossierTasks, setDossierTasks] = useState<Record<number, Tache[]>>({});
-  const [isTasksLoading, setIsTasksLoading] = useState(false);
-  const [isTacheModalOpen, setIsTacheModalOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [modal, setModal] = useState<{type: 'create' | 'edit' | null, dossier?: Dossier | null, user?: User | null }>({type: null})
+  const [tacheModal, setTacheModal] = useState<{tache: Tache | null}>({tache: null})
+  const [expandedDossierId, setExpandedDossierId] = useState<number | null>(null)
+  const [dossierTasks, setDossierTasks] = useState<Record<number, Tache[]>>({})
+  const [isTasksLoading, setIsTasksLoading] = useState(false)
+  const [isTacheModalOpen, setIsTacheModalOpen] = useState(false)
+  const [isTacheEditOpen, setIsTacheEditOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{id: number, type: 'dossier' | 'tache'} | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
   const {user} = useAuth()
+
   const fetchDossiers = async () => {
     try {
       setLoading(true)
@@ -49,6 +51,7 @@ export default function DossiersPage() {
       setLoading(false)
     }
   }
+
   const fetchUsers = async () => {
     try {
       setLoading(true)
@@ -61,49 +64,71 @@ export default function DossiersPage() {
       setLoading(false)
     }
   }
+
   useEffect(() => {
-    fetchDossiers();
+    fetchDossiers()
     fetchUsers()
   }, [])
 
   const openCreate = () => {
-      setModal({type: 'create', dossier: null, user: user})
-    }
-    const openEdit = (dossier: Dossier)=>{
-      setModal({type: 'edit', dossier: dossier})
-    }
-    const closeModal = () => {
-    setModal({ type: null });
-    };
+    setModal({type: 'create', dossier: null, user: user})
+  }
 
+  const openEdit = (dossier: Dossier) => {
+    setModal({type: 'edit', dossier: dossier})
+  }
+
+  const closeModal = () => {
+    setModal({ type: null })
+  }
 
   const handleView = async (id: number) => {
     if (expandedDossierId === id) {
-      setExpandedDossierId(null);
-      return;
+      setExpandedDossierId(null)
+      return
     }
-    setExpandedDossierId(id);
+    setExpandedDossierId(id)
     if (!dossierTasks[id]) {
       try {
-        setIsTasksLoading(true);
-        const data = await getTasks(id);
-        setDossierTasks(prev => ({ ...prev, [id]: data.data || [] }));
+        setIsTasksLoading(true)
+        const data = await getTasks(id)
+        setDossierTasks(prev => ({ ...prev, [id]: data.data || [] }))
       } catch (err) {
-        console.error("Failed to load tasks", err);
+        console.error("Failed to load tasks", err)
+        toast.error('Impossible de charger les tâches')
       } finally {
-        setIsTasksLoading(false);
+        setIsTasksLoading(false)
       }
     }
   }
+
+  const handleTacheEdit = (tache: Tache) => {
+    setTacheModal({ tache })
+    setIsTacheEditOpen(true)
+  }
+
+ 
+
   const handleDelete = async () => {
     if (!deleteTarget) return
+    
     try {
       setIsDeleting(true)
-      await deleteDossier(deleteTarget)
-      setDossiers(dossiers.filter(d => d.id !== deleteTarget))
-      toast.success('Dossier supprimé avec succès')
+      
+      if (deleteTarget.type === 'dossier') {
+        await deleteDossier(deleteTarget.id)
+        setDossiers(dossiers.filter(d => d.id !== deleteTarget.id))
+        toast.success('Dossier supprimé avec succès')
+      } else {
+        await deleteTask(deleteTarget.id)
+        if (expandedDossierId) {
+          const data = await getTasks(expandedDossierId)
+          setDossierTasks(prev => ({ ...prev, [expandedDossierId]: data.data || [] }))
+        }
+        toast.success('Tâche supprimée avec succès')
+      }
     } catch (err) {
-      toast.error('Impossible de supprimer le dossier')
+      toast.error('Impossible de supprimer')
       console.error(err)
     } finally {
       setIsDeleting(false)
@@ -120,23 +145,22 @@ export default function DossiersPage() {
     return colors[statut as keyof typeof colors] || colors['en_cours']
   }
 
-  const onSuccess=(dossier: Dossier)=> {
-      if(modal.type === 'create'){
-        setDossiers([...dossiers, dossier])
-        fetchDossiers()
-        toast.success('Dossier créé avec succès')
-      }else if(modal.type === 'edit'){
-        fetchDossiers()
-        toast.success('Dossier modifié avec succès')
-      }
+  const onSuccess = (dossier: Dossier) => {
+    if (modal.type === 'create') {
+      setDossiers([...dossiers, dossier])
+      fetchDossiers()
+      toast.success('Dossier créé avec succès')
+    } else if (modal.type === 'edit') {
+      fetchDossiers()
+      toast.success('Dossier modifié avec succès')
+    }
   }
+
   const filteredDossiers = dossiers.filter(dossier => {
     const searchLower = search.toLowerCase()
-    return (
-      dossier.titre.toLowerCase().includes(searchLower)
-    )
+    return dossier.titre.toLowerCase().includes(searchLower)
   })
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-100">
@@ -199,123 +223,142 @@ export default function DossiersPage() {
                 ) : (
                   filteredDossiers.map((dossier) => (
                     <React.Fragment key={dossier.id}>
-                    <tr className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-gray-900">
-                        {dossier.titre}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {dossier.cree_par || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 text-gray-600 hidden lg:table-cell">
-                        <div className="flex items-center gap-2">
-                          <span>
-                            {dossier.responsable?.split(' ')[0]} {dossier.responsable?.split(' ')[1]}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 hidden sm:table-cell">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{dossier.taches_terminees}</span>
-                          <span className="text-gray-400">/</span>
-                          <span className="text-gray-600">{dossier.total_tache}</span>
-                        </div>
-                      </td>
-                      {(()=>{
-                        const total = dossier.total_tache || 0;
-                        const finished = dossier.taches_terminees || 0;
-                        const percentage = total > 0 ? (finished / total) * 100 : 0;
-
-                      return(
-                      <td className="px-6 py-4 hidden md:table-cell">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-green-600  transition-all"
-                              style={{ width: `${percentage}%` }}
-                            />
+                      <tr className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 font-medium text-gray-900">
+                          {dossier.titre}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {dossier.cree_par || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 text-gray-600 hidden lg:table-cell">
+                          <div className="flex items-center gap-2">
+                            <span>
+                              {dossier.responsable?.split(' ')[0]} {dossier.responsable?.split(' ')[1]}
+                            </span>
                           </div>
-                          <span className="text-xs font-medium text-gray-600">
-                            {Math.round(percentage)}%
-                          </span>
-                        </div>
-                      </td>);
-                    })()}
-                      <td className="px-6 py-4 text-gray-600 text-xs hidden xl:table-cell">
-                        {new Date(dossier.date_limite).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(dossier.statut)}`}>
-                            {dossier.statut}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button 
-                            className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-gray-700"
-                            title="View" onClick={() => handleView(dossier.id!)}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button 
-                            className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-gray-700"
-                            title="Edit" onClick={()=> openEdit(dossier)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button 
-                            className="p-1 hover:bg-red-50 rounded transition-colors text-gray-500 hover:text-red-600"
-                            title="Delete"
-                            onClick={() => setDeleteTarget(dossier.id!)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    {expandedDossierId === dossier.id && (
-                      <tr className="bg-gray-50 border-b border-gray-200">
-                        <td colSpan={8} className="px-6 py-4">
-                          <div className="text-left space-y-4">
-                            {dossier.description && (
-                              <div>
-                                <h4 className="font-semibold text-gray-800 text-sm">Description</h4>
-                                <p className="text-sm text-gray-600 mt-1">{dossier.description}</p>
+                        </td>
+                        <td className="px-6 py-4 hidden sm:table-cell">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{dossier.taches_terminees}</span>
+                            <span className="text-gray-400">/</span>
+                            <span className="text-gray-600">{dossier.total_tache}</span>
+                          </div>
+                        </td>
+                        {(() => {
+                          const total = dossier.total_tache || 0
+                          const finished = dossier.taches_terminees || 0
+                          const percentage = total > 0 ? (finished / total) * 100 : 0
+
+                          return (
+                            <td className="px-6 py-4 hidden md:table-cell">
+                              <div className="flex items-center gap-2">
+                                <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-green-600 transition-all"
+                                    style={{ width: `${percentage}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs font-medium text-gray-600">
+                                  {Math.round(percentage)}%
+                                </span>
                               </div>
-                            )}
-                            <div>
-                              <div className="flex justify-between items-center mb-3">
-                                <h4 className="font-semibold text-gray-800 text-sm">Tâches ({dossierTasks[dossier.id!]?.length || 0})</h4>
-                                <Button size="sm" onClick={() => setIsTacheModalOpen(true)} className="flex items-center gap-1">
-                                  <Plus className="w-3 h-3" /> Ajouter une tâche
-                                </Button>
-                              </div>
-                              {isTasksLoading && !dossierTasks[dossier.id!] ? (
-                                <div className="text-sm text-gray-500">Chargement des tâches...</div>
-                              ) : dossierTasks[dossier.id!]?.length === 0 ? (
-                                <div className="text-sm text-gray-500">Aucune tâche pour ce dossier.</div>
-                              ) : (
-                                <ul className="space-y-2">
-                                  {dossierTasks[dossier.id!]?.map((tache) => (
-                                    <li key={tache.id} className="text-sm bg-white border border-gray-200 rounded p-3 flex justify-between items-center">
-                                      <div>
-                                        <div className="font-medium text-gray-800">{tache.libelle}</div>
-                                        <div className="text-xs text-gray-500 mt-1 flex gap-3">
-                                          <span>Échéance: {tache.date_fin ? new Date(tache.date_fin).toLocaleDateString() : 'N/A'}</span>
-                                          <span className="capitalize border-l pl-3 border-gray-300">Statut: {tache.statut.replace('_', ' ')}</span>
-                                        </div>
-                                      </div>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
+                            </td>
+                          )
+                        })()}
+                        <td className="px-6 py-4 text-gray-600 text-xs hidden xl:table-cell">
+                          {new Date(dossier.date_limite).toLocaleDateString('fr-FR')}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(dossier.statut)}`}>
+                              {dossier.statut}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button 
+                              className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-gray-700"
+                              title="View" onClick={() => handleView(dossier.id!)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button 
+                              className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-gray-700"
+                              title="Edit" onClick={() => openEdit(dossier)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              className="p-1 hover:bg-red-50 rounded transition-colors text-gray-500 hover:text-red-600"
+                              title="Delete"
+                              onClick={() => setDeleteTarget({ id: dossier.id!, type: 'dossier' })}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>
-                    )}
-                  </React.Fragment>
+                      {expandedDossierId === dossier.id && (
+                        <tr className="bg-gray-50 border-b border-gray-200">
+                          <td colSpan={8} className="px-6 py-4">
+                            <div className="text-left space-y-4">
+                              {dossier.description && (
+                                <div>
+                                  <h4 className="font-semibold text-gray-800 text-sm">Description</h4>
+                                  <p className="text-sm text-gray-600 mt-1">{dossier.description}</p>
+                                </div>
+                              )}
+                              <div>
+                                <div className="flex justify-between items-center mb-3">
+                                  <h4 className="font-semibold text-gray-800 text-sm">
+                                    Tâches ({dossierTasks[dossier.id!]?.length || 0})
+                                  </h4>
+                                  <Button size="sm" onClick={() => setIsTacheModalOpen(true)} className="flex items-center gap-1">
+                                    <Plus className="w-3 h-3" /> Ajouter une tâche
+                                  </Button>
+                                </div>
+                                {isTasksLoading && !dossierTasks[dossier.id!] ? (
+                                  <div className="text-sm text-gray-500">Chargement des tâches...</div>
+                                ) : dossierTasks[dossier.id!]?.length === 0 ? (
+                                  <div className="text-sm text-gray-500">Aucune tâche pour ce dossier.</div>
+                                ) : (
+                                  <ul className="space-y-2">
+                                    {dossierTasks[dossier.id!]?.map((t) => (
+                                      <li key={t.id} className="text-sm bg-white border border-gray-200 rounded p-3 flex justify-between items-center">
+                                        <div>
+                                          <div className="font-medium text-gray-800">{t.libelle}</div>
+                                          <div className="text-xs text-gray-500 mt-1 flex gap-3">
+                                            <span>Échéance: {t.date_fin ? new Date(t.date_fin).toLocaleDateString('fr-FR') : 'N/A'}</span>
+                                            <span className="capitalize border-l pl-3 border-gray-300">
+                                              Statut: {t.statut?.replace('_', ' ') || 'N/A'}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="flex gap-4">
+                                          <button 
+                                            className="cursor-pointer text-gray-500 hover:text-blue-600 transition-colors"
+                                            onClick={() => handleTacheEdit(t)}
+                                          >
+                                            <Edit className="w-4 h-4" />
+                                          </button>
+                                          <button 
+                                            className="cursor-pointer text-gray-500 hover:text-red-600 transition-colors"
+                                            onClick={()=> setDeleteTarget({id: t.id, type: 'tache'})}
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))
                 )}
               </tbody>
@@ -323,36 +366,65 @@ export default function DossiersPage() {
           </div>
         </CardContent>
       </Card>
-          <DossierFormModal
-            isOpen={modal.type !== null}
-            onClose={closeModal}
-            onSuccess={onSuccess}
-            dossierToEdit={modal.dossier ?? null}
-            user={modal.user? modal.user: null}
-            users={users}
-          />
-          <TacheFormModal
-            isOpen={isTacheModalOpen}
-            onClose={() => setIsTacheModalOpen(false)}
-            onSuccess={() => {
-              if (expandedDossierId) {
-                getTasks(expandedDossierId).then(data => {
-                  setDossierTasks(prev => ({ ...prev, [expandedDossierId]: data.data || [] }));
-                });
-              }
-            }}
-            dossierId={expandedDossierId}
-            users={users}
-            user={user}
-          />
-          <ConfirmModal
-            isOpen={deleteTarget !== null}
-            onClose={() => setDeleteTarget(null)}
-            onConfirm={handleDelete}
-            isLoading={isDeleting}
-            title="Supprimer le dossier"
-            description="Cette action est irréversible. Le dossier et toutes ses données associées seront définitivement supprimés."
-          />
+
+      <DossierFormModal
+        isOpen={modal.type !== null}
+        onClose={closeModal}
+        onSuccess={onSuccess}
+        dossierToEdit={modal.dossier ?? null}
+        user={modal.user ? modal.user : null}
+        users={users}
+      />
+
+      <TacheFormModal
+        isOpen={isTacheModalOpen}
+        onClose={() => setIsTacheModalOpen(false)}
+        onSuccess={() => {
+          if (expandedDossierId) {
+            getTasks(expandedDossierId).then(data => {
+              setDossierTasks(prev => ({ ...prev, [expandedDossierId]: data.data || [] }))
+            })
+          }
+        }}
+        dossierId={expandedDossierId}
+        users={users}
+        user={user}
+      />
+
+      {isTacheEditOpen && tacheModal.tache && (
+        <TacheEditModal
+          users={users}
+          user={user}
+          tacheToEdit={tacheModal.tache}
+          isOpen={isTacheEditOpen}
+          onClose={() => {
+            setIsTacheEditOpen(false)
+            setTacheModal({ tache: null })
+          }}
+          onSuccess={() => {
+            if (expandedDossierId) {
+              getTasks(expandedDossierId).then(data => {
+                setDossierTasks(prev => ({ ...prev, [expandedDossierId]: data.data || [] }))
+              })
+            }
+          }}
+          dossierId={expandedDossierId}
+        />
+      )}
+
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        isLoading={isDeleting}
+        title={deleteTarget?.type === 'dossier' ? 'Supprimer le dossier' : 'Supprimer la tâche'}
+        description={
+          deleteTarget?.type === 'dossier'
+            ? 'Cette action est irréversible. Le dossier et toutes ses données associées seront définitivement supprimés.'
+            : 'Cette action est irréversible. La tâche sera définitivement supprimée.'
+        }
+        confirmLabel={deleteTarget?.type === 'dossier' ? 'Supprimer le dossier' : 'Supprimer la tâche'}
+      />
     </div>
   )
 }

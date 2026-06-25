@@ -61,28 +61,6 @@ CREATE TABLE IF NOT EXISTS alertes (
 /*initial user */
 INSERT INTO users (nom, prenom, email, mdp, poste, role_dir) VALUES ('DERBO', 'Adama', 'derboadama31@gmail.com', '@Adam123', 'Developpeur', 'admin');
 
-CREATE VIEW vue_avancement_dossiers AS
-SELECT
-    d.id,
-    d.titre AS titre_dossier,
-    d.statut,
-    d.date_limite,
-    COALESCE(ROUND(AVG(t.avancement), 2), 0)        AS taux_mise_en_oeuvre,
-    CASE
-        WHEN d.statut = 'en_cours' AND d.date_limite < CURRENT_DATE THEN 'en retard'
-        WHEN d.statut = 'boucle'                                    THEN 'terminé'
-        ELSE                                                              'à jour'
-    END                                             AS alerte_suivi
-FROM dossiers d
-LEFT JOIN taches t ON d.id = t.id_dossier
-GROUP BY d.id, d.titre, d.statut, d.date_limite;
-
-
-CREATE VIEW vue_taux_global_projet AS
-SELECT
-    COUNT(DISTINCT id)                      AS total_dossiers,
-    COALESCE(ROUND(AVG(avancement), 2), 0)  AS taux_global_execution
-FROM taches;
 
 CREATE INDEX IF NOT EXISTS idx_dossier_instance    ON dossiers(id_instance);
 CREATE INDEX IF NOT EXISTS idx_dossier_statut      ON dossiers(statut);

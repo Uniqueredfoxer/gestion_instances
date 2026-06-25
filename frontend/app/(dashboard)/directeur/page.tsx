@@ -8,12 +8,16 @@ import { getStats } from '@/lib/api'
 import { 
   FolderKanban, 
   CheckCheck,
-  Users
+  Users,
+  ClockAlert,
+  TrendingUp
 } from 'lucide-react'
 
 interface StatsData {
   total_dossiers: number
   dossiers_termines: number
+  completion_rate: number
+  dossier_en_retard: number
   dossiers_par_responsable: Array<{ nom: string, prenom: string, count: string }>
   nbre_taches_par_intervenant: Array<{ nom: string, prenom: string, count: string }>
 }
@@ -29,6 +33,7 @@ export default function DirecteurOverviewPage() {
       try {
         setLoading(true)
         const statsData = await getStats()
+        console.log(statsData.data)
         setStats(statsData.data)
       } catch (err) {
         setError('Échec du chargement des statistiques')
@@ -73,6 +78,20 @@ export default function DirecteurOverviewPage() {
       title: 'Dossiers Traités à Temps',
       value: stats?.dossiers_termines || 0,
       icon: CheckCheck,
+      color: 'success'
+    },
+    {
+      title: 'Dossier En Retard',
+      value: stats?.dossier_en_retard,
+      icon: ClockAlert,
+      color: 'error'
+    },
+    {
+      title: 'Taux MOE global',
+      value: `${(stats?.total_dossiers || 0) > 0 
+              ? Math.round(((stats?.dossiers_termines || 0) / (stats?.total_dossiers || 1)) * 100) 
+              : 0}%`,
+      icon: TrendingUp,
       color: 'success'
     }
   ]

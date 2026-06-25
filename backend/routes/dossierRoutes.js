@@ -22,6 +22,7 @@ router.delete('/delete/:id', DossierController.deleteDossier);
 router.post('/:dossierId/taches/create', DossierController.createTask);
 router.get('/:dossierId/taches', DossierController.getTasks);
 router.put('/taches/update/:taskId', DossierController.updateTask);
+router.delete('/taches/delete/:taskId', DossierController.deleteTask)
 router.post('/taches/validate/:taskId', DossierController.validateTaskCompletion);
 
 

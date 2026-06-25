@@ -1,7 +1,7 @@
 
 import type { Tache } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://directtrack.onrender.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 
 const getHeaders = (isFormData = false) => {
@@ -144,6 +144,11 @@ export const  updateTask = (taskId: number, data: unknown) =>
       headers: getHeaders(),
       body: JSON.stringify(data),
     })
+
+export const deleteTask = (taskId: number)=> request(`/dossiers/taches/delete/${taskId}`, {
+  method: 'DELETE',
+  headers: getHeaders(),
+})
 
 export const  validateTask = (taskId: number, data: { approuve: boolean; commentaires?: string }) =>
     request(`/dossiers/taches/validate/${taskId}`, {

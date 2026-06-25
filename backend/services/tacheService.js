@@ -74,7 +74,6 @@ export const TacheService = {
             [taskId, userId]
         );
         
-        // Mettre à jour la tâche
         await db.query(
             `UPDATE taches SET demande_validation_le = NOW(), demande_validation_par = $1
              WHERE id = $2`,
@@ -103,7 +102,6 @@ export const TacheService = {
             throw new Error("Seul le créateur du dossier peut valider les tâches");
         }
         
-        // Mettre à jour la demande de validation
         await db.query(
             `UPDATE demandes_validation 
              SET statut = $1, traitee_par = $2, traitee_le = NOW(), commentaires = $3
@@ -124,7 +122,6 @@ export const TacheService = {
             );
             return result.rows[0];
         } else {
-            // Réinitialiser la demande
             await db.query(
                 `UPDATE taches 
                  SET demande_validation_le = NULL, demande_validation_par = NULL
@@ -208,6 +205,18 @@ export const TacheService = {
         return result.rows[0];
     },
     
+    async deleteTask(taskId) {
+        if(!taskId){
+            throw new Error('task Id was not provided')
+        }
+        try{
+            db.query(`delete from taches where id=$1`, [taskId])
+            return {success: true, data: 'tache supprimée avec succès'}
+        }catch(err){
+            console.log(err)
+            return {success: false, error: err.message}
+        }
+    },
     async getMyTasks(userId) {
         const result = await db.query(
             `SELECT t.*, d.titre as titre_dossier, d.id as id_dossier

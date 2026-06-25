@@ -1,3 +1,4 @@
+import { json, response } from 'express';
 import { DossierService } from '../services/dossierService.js';
 import { TacheService } from '../services/tacheService.js';
 
@@ -119,6 +120,7 @@ export const DossierController = {
         }
     },
     async updateTask(req, res) {
+        if(req.user.role !=='directeur') res.json({success: false, error: 'Non authorisé'})
         try {
             const task = await TacheService.updateTask(
                 req.params.taskId,
@@ -130,6 +132,21 @@ export const DossierController = {
             res.json({ success: true, data: task });
         } catch (err) {
             res.status(400).json({ success: false, error: err.message });
+        }
+    },
+
+    async deleteTask(req, res) {
+        const id = req.params.taskId
+        console.log(id)
+        if (req.user.role !=='directeur') {
+            res.json({success:false, error: 'Non autorisé'});
+            return
+        }
+        try{
+            const response = await TacheService.deleteTask(id)
+            res.json(response)
+        }catch(err){
+            res.json({success: false, error: err.message})
         }
     },
     async validateTaskCompletion(req, res) {

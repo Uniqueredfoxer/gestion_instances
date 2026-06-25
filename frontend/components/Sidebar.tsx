@@ -44,17 +44,17 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     admin: [
       { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
       { name: 'Utilisateurs', href: '/admin/utilisateurs', icon: Users },
-      { name: 'Alertes', href: '/admin/alerts', icon: AlertCircle }
+      { name: 'Alertes', href: '/admin/alertes', icon: AlertCircle }
     ],
     directeur: [
       { name: 'DashBoard', href: '/directeur', icon: LucideLayoutDashboard },
       { name: 'Dossiers', href: '/directeur/dossiers', icon: FolderKanban },
-      { name: 'Taches', href: '/directeur/taches', icon: ClipboardList}
+      { name: 'Taches', href: '/directeur/taches', icon: ClipboardList},
+      { name: 'Alertes', href: '/directeur/alertes', icon: AlertCircle}
     ],
     intervenant: [
       { name: 'Dashboard', href: '/intervenant', icon: LayoutDashboard },
       { name: 'Taches', href: '/intervenant/mes-taches', icon: ClipboardList },
-      { name: 'Calendrier', href: '/intervenant/calendrier', icon: CalendarDays },
       { name: 'Alertes', href: '/intervenant/alertes', icon: AlertCircle }
     ]
   }

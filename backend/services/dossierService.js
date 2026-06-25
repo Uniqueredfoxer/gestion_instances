@@ -186,7 +186,8 @@ export const DossierService = {
                 (SELECT COUNT(*) from users) AS total_users,
                 COUNT(DISTINCT CASE WHEN d.statut = 'boucle' THEN d.id END) as dossiers_termines,
                 COUNT(DISTINCT CASE WHEN d.statut = 'boucle' AND (d.boucle_le <= date_limite OR d.boucle_le IS NULL) THEN d.id END) as dossiers_termines_a_temps,
-                COUNT(DISTINCT t.id) as total_taches,
+                COUNT(DISTINCT CASE WHEN d.statut !='boucle' AND d.date_limite < CURRENT_DATE then d.id END) as dossier_en_retard,
+                COUNT(DISTINCT t.id) as total_taches ,
                 COUNT(DISTINCT CASE WHEN t.statut = 'termine' THEN t.id END) as taches_terminees,
                 COUNT(DISTINCT t.id_responsable) as active_users
             FROM dossiers d
