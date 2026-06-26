@@ -1,6 +1,4 @@
 
-import type { Tache } from '@/types';
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://directtrack.onrender.com/api';
 
 

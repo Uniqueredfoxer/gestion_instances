@@ -136,7 +136,7 @@ export const UserService = {
     async deleteUser(userId) {
 
         const taskCheck = await db.query(
-            `SELECT COUNT(*) FROM taches WHERE id_responsable = $1`,
+            `SELECT COUNT(*) FROM taches WHERE id_responsable = $1 or cree_par = $1`,
             [userId]
         );
         

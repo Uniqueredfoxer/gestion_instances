@@ -345,7 +345,7 @@ export default function UserFormModal({
                   disabled={loading}
                 >
                   <option value="intervenant">Intervenant</option>
-                  <option value="directeur/trice">Directeur</option>
+                  <option value="directeur">Directeur</option>
                   <option value="admin">Administrateur</option>
                 </select>
               </div>
